@@ -1,6 +1,6 @@
-pub use self::address::Address;
-pub use self::message::MessageHeader;
-pub use self::message::VersionMessage;
+pub use self::message::header::MessageHeader;
+pub use self::message::version::VersionMessage;
 
-pub mod address;
 pub mod message;
+
+pub const PROTOCOL_VERSION:i32      = 70012;

@@ -1,5 +1,5 @@
 use std;
-use super::super::serialize::*;
+use ::serialize::{self, Serializable};
 
 #[derive(Debug)]
 pub struct Address {

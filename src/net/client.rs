@@ -87,7 +87,7 @@ impl Client {
    fn send_version(&mut self) -> Result< (), serialize::Error > {
       if self.stream.is_none() { try!(Err(io::Error::new(io::ErrorKind::NotConnected, "not connected"))) }
 
-      let mut msg = protocol::message::VersionMessage::new();
+      let mut msg = protocol::VersionMessage::new();
       {
          let s = self.stream.as_ref().unwrap();
          msg.addr_me.set_services(0).set_ip(&s.local_addr().unwrap());
@@ -126,7 +126,7 @@ impl Client {
       if self.recv_mode == 1 { //recv body
          if self.recv_buffer.readable_size() < self.recv_header.size as usize { return Ok(0) };
          let result = match self.recv_header.command {
-            protocol::message::COMMAND_VERSION => self.on_recv_version(),
+            ::protocol::message::header::COMMAND_VERSION => self.on_recv_version(),
             _ => self.on_recv_unknown()
          };
          try!(result);
@@ -138,7 +138,7 @@ impl Client {
 
    fn on_recv_version(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
-      let mut msg = protocol::message::VersionMessage::new();
+      let mut msg = protocol::VersionMessage::new();
       r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
       println!("recv version: {:?}", &msg);
       Ok(r)

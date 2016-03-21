@@ -61,14 +61,14 @@ macro_rules! ADD_SERIALIZE_METHODS {
          sum
       }
 
-      fn serialize(&self, io:&mut std::io::Write) -> serialize::Result {
+      fn serialize(&self, io:&mut std::io::Write) -> ::serialize::Result {
          let mut r = 0usize;
          $(
             r += try!( self.$x.serialize(io) );
          )*
          Ok(r)
       }
-      fn unserialize(&mut self, io:&mut std::io::Read) -> serialize::Result {
+      fn unserialize(&mut self, io:&mut std::io::Read) -> ::serialize::Result {
          let mut r = 0usize;
          $(
             r += try!( self.$x.unserialize(io) );
