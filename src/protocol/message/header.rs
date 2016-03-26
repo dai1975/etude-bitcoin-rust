@@ -33,7 +33,7 @@ pub const COMMAND_FILTERCLEAR:[u8; COMMAND_SIZE] = [0x66, 0x69, 0x6c, 0x74, 0x65
 pub const COMMAND_REJECT:[u8; COMMAND_SIZE]      = [0x72, 0x65, 0x6a, 0x65, 0x63, 0x74, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
 pub const COMMAND_SENDHEADERS:[u8; COMMAND_SIZE] = [0x73, 0x65, 0x6e, 0x64, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x73, 0x00];
 
-#[derive(Debug)]
+#[derive(Debug,Default)]
 pub struct MessageHeader {
    pub start    : [u8; MESSAGE_START_SIZE],
    pub command  : [u8; COMMAND_SIZE],
@@ -49,13 +49,13 @@ impl std::fmt::Display for MessageHeader {
 }
 
 impl MessageHeader {
-   pub fn new() -> MessageHeader {
-      MessageHeader {
-         start    : [0u8; MESSAGE_START_SIZE],
-         command  : [0u8; COMMAND_SIZE],
-         size     : 0,
-         checksum : 0,
-      }
+   pub fn new(start_:&[u8;MESSAGE_START_SIZE], command_:&[u8;COMMAND_SIZE], size_:u32, checksum_:u32) -> MessageHeader {
+      let mut h = MessageHeader::default();
+      h.start.clone_from_slice(start_);
+      h.command.clone_from_slice(command_);
+      h.size     = size_;
+      h.checksum = checksum_;
+      h
    }
 
    #[allow(non_snake_case)]
@@ -99,10 +99,10 @@ impl Serializable for MessageHeader {
 
 #[test]
 fn test_serialize_header() {
-   let h = MessageHeader::new(&[0x01, 0x02, 0x03, 0x04], "command", 123u32, 987u32);
+   let h = MessageHeader::new(&[1u8, 2u8, 3u8, 4u8], &COMMAND_VERSION, 123u32, 987u32);
    let buf = &mut vec![0; 0]; //Vec::with_capacity(128usize);
-   assert_matches!(h.serialize(buf), Ok(()));
-   assert_eq!([1, 2, 3, 4, 99, 111, 109, 109, 97, 110, 100, 0, 0, 0, 0, 0, 123, 0, 0, 0, 219, 3, 0, 0],
+   assert_matches!(h.serialize(buf), Ok(24usize));
+   assert_eq!([1, 2, 3, 4, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0, 0, 0, 0, 0, 123, 0, 0, 0, 219, 3, 0, 0],
               buf.as_slice());
 }
 

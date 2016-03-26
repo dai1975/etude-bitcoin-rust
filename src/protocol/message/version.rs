@@ -4,7 +4,7 @@ use ::serialize::{self, Serializable, LimitedString};
 use super::Address;
 use super::header::MAX_SUBVERSION_LENGTH;
 
-#[derive(Debug)]
+#[derive(Debug,Default)]
 pub struct VersionMessage {
    pub version   : i32,
    pub services  : u64,

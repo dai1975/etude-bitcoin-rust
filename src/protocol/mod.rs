@@ -1,5 +1,4 @@
-pub use self::message::header::MessageHeader;
-pub use self::message::version::VersionMessage;
+pub use self::message::*;
 
 pub mod message;
 

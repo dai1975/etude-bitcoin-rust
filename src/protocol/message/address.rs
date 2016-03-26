@@ -1,7 +1,7 @@
 use std;
 use ::serialize::{self, Serializable};
 
-#[derive(Debug)]
+#[derive(Debug,Default)]
 pub struct Address {
    pub services: u64,
    pub time : u32,

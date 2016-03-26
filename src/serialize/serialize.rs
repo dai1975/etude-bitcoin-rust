@@ -189,8 +189,10 @@ impl Serializable for i64 {
    }
 }
 
+pub type UInt256 = [u8;32];
+
 pub struct CompactSize {
-   value:u64,
+   pub value:u64,
 }
 impl CompactSize {
    fn new(v:u64) -> CompactSize {
@@ -209,48 +211,90 @@ impl CompactSize {
          9
       }
    }
+
+   #[allow(non_snake_case)]
+   fn Serialize(value:u64, io: &mut std::io::Write) -> Result {
+      let mut r = 0usize;
+      if value < 253 {
+         let v = value as u8;
+         r += try!(v.serialize(io));
+      } else if value <= 0xFFFF {
+         let v = value as u16;
+         r += try!(253u8.serialize(io));
+         r += try!(v.serialize(io));
+      } else if value <= 0xFFFFFFFF {
+         let v = value as u32;
+         r += try!(254u8.serialize(io));
+         r += try!(v.serialize(io));
+      } else {
+         r += try!(255u8.serialize(io));
+         r += try!(value.serialize(io));
+      }
+      Ok(r)
+   }
+
+   #[allow(non_snake_case)]
+   fn Unserialize(value:&mut u64, io: &mut std::io::Read) -> Result {
+      let mut r = 0usize;
+      let mut h:u8 = 0;
+      r += try!(h.unserialize(io));
+      if h < 253 {
+         *value = h as u64;
+      } else if h == 253 {
+         let mut v:u16 = 0;
+         r += try!(v.unserialize(io));
+         *value = v as u64;
+      } else if h == 254 {
+         let mut v:u32 = 0;
+         r += try!(v.unserialize(io));
+         *value = v as u64;
+      } else if h == 255 {
+         let mut v:u64 = 0;
+         r += try!(v.unserialize(io));
+         *value = v;
+      }
+      Ok(r)
+   }
 }
 impl Serializable for CompactSize {
    fn get_serialize_size(&self) -> usize {
       CompactSize::GetSerializeSize(self.value)
    }
    fn serialize(&self, io: &mut std::io::Write) -> Result {
-      let mut r = 0usize;
-      if self.value < 253 {
-         let v = self.value as u8;
+      CompactSize::Serialize(self.value, io)
+   }
+   fn unserialize(&mut self, io: &mut std::io::Read) -> Result {
+      CompactSize::Unserialize(&mut self.value, io)
+   }
+}
+
+impl <T> Serializable for Vec<T> where T:Clone + Default + Serializable {
+   fn get_serialize_size(&self) -> usize {
+      let mut r:usize = 0;
+      r += CompactSize::GetSerializeSize(self.len() as u64);
+      for v in self {
+         r += v.get_serialize_size();
+      }
+      r
+   }
+   fn serialize(&self, io:&mut std::io::Write) -> Result {
+      let mut r:usize = 0;
+      r += try!(CompactSize::Serialize(self.len() as u64, io));
+      for v in self {
          r += try!(v.serialize(io));
-      } else if self.value <= 0xFFFF {
-         let v = self.value as u16;
-         r += try!(253u8.serialize(io));
-         r += try!(v.serialize(io));
-      } else if self.value <= 0xFFFFFFFF {
-         let v = self.value as u32;
-         r += try!(254u8.serialize(io));
-         r += try!(v.serialize(io));
-      } else {
-         r += try!(255u8.serialize(io));
-         r += try!(self.value.serialize(io));
       }
       Ok(r)
    }
-   fn unserialize(&mut self, io: &mut std::io::Read) -> Result {
-      let mut r = 0usize;
-      let mut h:u8 = 0;
-      r += try!(h.unserialize(io));
-      if h < 253 {
-         self.value = h as u64;
-      } else if h == 253 {
-         let mut v:u16 = 0;
+   fn unserialize(&mut self, io:&mut std::io::Read) -> Result
+   {
+      let mut r:usize = 0;
+      let mut len:u64 = 0;
+      {
+         r += try!(CompactSize::Unserialize(&mut len, io));
+         self.resize(len as usize, T::default());
+      }
+      for v in self {
          r += try!(v.unserialize(io));
-         self.value = v as u64;
-      } else if h == 254 {
-         let mut v:u32 = 0;
-         r += try!(v.unserialize(io));
-         self.value = v as u64;
-      } else if h == 255 {
-         let mut v:u64 = 0;
-         r += try!(v.unserialize(io));
-         self.value = v;
       }
       Ok(r)
    }
@@ -324,8 +368,9 @@ impl Serializable for [u8] {
       try!(io.write_all(self));
       Ok(self.len())
    }
-   fn unserialize(&mut self, _io:&mut std::io::Read) -> Result {
-      Err(Error::Serialize(SerializeError::new("[u8] unserialize is not implemented yet")))
+   fn unserialize(&mut self, io:&mut std::io::Read) -> Result {
+      try!(io.read_exact(self));
+      Ok(self.len())
    }
 }
 

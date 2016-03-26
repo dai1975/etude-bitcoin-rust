@@ -30,7 +30,7 @@ impl Client {
          stream:None,
          recv_buffer: super::RingBuffer::new(1280),
          recv_mode: 0,
-         recv_header: protocol::MessageHeader::new(),
+         recv_header: protocol::MessageHeader::default(),
       }
    }
    pub fn run(&mut self, addr: String) -> Result<bool,serialize::Error> {
@@ -64,7 +64,7 @@ impl Client {
          try!(Err(io::Error::new(io::ErrorKind::NotConnected, "not connected")));
       }
 
-      let mut hdr = protocol::MessageHeader::new();
+      let mut hdr = protocol::MessageHeader::default();
       let hdrsize = hdr.get_serialize_size();
       let objsize = obj.get_serialize_size();
       let mut buf = vec![0u8; hdrsize + objsize];
@@ -127,6 +127,8 @@ impl Client {
          if self.recv_buffer.readable_size() < self.recv_header.size as usize { return Ok(0) };
          let result = match self.recv_header.command {
             ::protocol::message::header::COMMAND_VERSION => self.on_recv_version(),
+            ::protocol::message::header::COMMAND_VERACK  => self.on_recv_verack(),
+            ::protocol::message::header::COMMAND_INV     => self.on_recv_inv(),
             _ => self.on_recv_unknown()
          };
          try!(result);
@@ -138,7 +140,21 @@ impl Client {
 
    fn on_recv_version(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
-      let mut msg = protocol::VersionMessage::new();
+      let mut msg = protocol::VersionMessage::default();
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      println!("recv version: {:?}", &msg);
+      Ok(r)
+   }
+   fn on_recv_verack(&mut self) -> Result<usize, serialize::Error> {
+      let mut r = 0usize;
+      let mut msg = protocol::VerAckMessage::default();
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      println!("recv version: {:?}", &msg);
+      Ok(r)
+   }
+   fn on_recv_inv(&mut self) -> Result<usize, serialize::Error> {
+      let mut r = 0usize;
+      let mut msg = protocol::InvMessage::default();
       r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
       println!("recv version: {:?}", &msg);
       Ok(r)
