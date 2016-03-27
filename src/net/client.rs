@@ -126,9 +126,28 @@ impl Client {
       if self.recv_mode == 1 { //recv body
          if self.recv_buffer.readable_size() < self.recv_header.size as usize { return Ok(0) };
          let result = match self.recv_header.command {
-            ::protocol::message::header::COMMAND_VERSION => self.on_recv_version(),
-            ::protocol::message::header::COMMAND_VERACK  => self.on_recv_verack(),
-            ::protocol::message::header::COMMAND_INV     => self.on_recv_inv(),
+            ::protocol::message::header::COMMAND_VERSION     => self.on_recv_version(),
+            ::protocol::message::header::COMMAND_VERACK      => self.on_recv_verack(),
+            ::protocol::message::header::COMMAND_ADDR        => self.on_recv_addr(),
+            ::protocol::message::header::COMMAND_INV         => self.on_recv_inv(),
+            ::protocol::message::header::COMMAND_GETDATA     => self.on_recv_getdata(),
+            ::protocol::message::header::COMMAND_MERKLEBLOCK => self.on_recv_merkleblock(),
+            ::protocol::message::header::COMMAND_GETBLOCKS   => self.on_recv_getblocks(),
+            ::protocol::message::header::COMMAND_GETHEADERS  => self.on_recv_getheaders(),
+            ::protocol::message::header::COMMAND_TX          => self.on_recv_tx(),
+            ::protocol::message::header::COMMAND_HEADERS     => self.on_recv_headers(),
+            ::protocol::message::header::COMMAND_BLOCK       => self.on_recv_block(),
+            ::protocol::message::header::COMMAND_GETADDR     => self.on_recv_getaddr(),
+            ::protocol::message::header::COMMAND_MEMPOOL     => self.on_recv_mempool(),
+            ::protocol::message::header::COMMAND_PING        => self.on_recv_ping(),
+            ::protocol::message::header::COMMAND_PONG        => self.on_recv_pong(),
+            ::protocol::message::header::COMMAND_ALERT       => self.on_recv_alert(),
+            ::protocol::message::header::COMMAND_NOTFOUND    => self.on_recv_notfound(),
+            ::protocol::message::header::COMMAND_FILTERLOAD  => self.on_recv_filterload(),
+            ::protocol::message::header::COMMAND_FILTERADD   => self.on_recv_filteradd(),
+            ::protocol::message::header::COMMAND_FILTERCLEAR => self.on_recv_filterclear(),
+            ::protocol::message::header::COMMAND_REJECT      => self.on_recv_reject(),
+            ::protocol::message::header::COMMAND_SENDHEADERS => self.on_recv_sendheaders(),
             _ => self.on_recv_unknown()
          };
          try!(result);
@@ -142,21 +161,154 @@ impl Client {
       let mut r = 0usize;
       let mut msg = protocol::VersionMessage::default();
       r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
-      println!("recv version: {:?}", &msg);
+      println!("recv message: {:?}", &msg);
       Ok(r)
    }
    fn on_recv_verack(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
       let mut msg = protocol::VerAckMessage::default();
       r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
-      println!("recv version: {:?}", &msg);
+      println!("recv message: {:?}", &msg);
+      Ok(r)
+   }
+   fn on_recv_addr(&mut self) -> Result<usize, serialize::Error> {
+      let mut r = 0usize;
+      let mut msg = protocol::AddrMessage::default();
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      println!("recv message: {:?}", &msg);
       Ok(r)
    }
    fn on_recv_inv(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
       let mut msg = protocol::InvMessage::default();
       r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
-      println!("recv version: {:?}", &msg);
+      println!("recv message: {:?}", &msg);
+      Ok(r)
+   }
+   fn on_recv_getdata(&mut self) -> Result<usize, serialize::Error> {
+      let mut r = 0usize;
+      let mut msg = protocol::VerAckMessage::default();
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      println!("recv message: {:?}", &msg);
+      Ok(r)
+   }
+   fn on_recv_merkleblock(&mut self) -> Result<usize, serialize::Error> {
+      let mut r = 0usize;
+      let mut msg = protocol::VerAckMessage::default();
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      println!("recv message: {:?}", &msg);
+      Ok(r)
+   }
+   fn on_recv_getblocks(&mut self) -> Result<usize, serialize::Error> {
+      let mut r = 0usize;
+      let mut msg = protocol::VerAckMessage::default();
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      println!("recv message: {:?}", &msg);
+      Ok(r)
+   }
+   fn on_recv_getheaders(&mut self) -> Result<usize, serialize::Error> {
+      let mut r = 0usize;
+      let mut msg = protocol::VerAckMessage::default();
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      println!("recv message: {:?}", &msg);
+      Ok(r)
+   }
+   fn on_recv_tx(&mut self) -> Result<usize, serialize::Error> {
+      let mut r = 0usize;
+      let mut msg = protocol::VerAckMessage::default();
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      println!("recv message: {:?}", &msg);
+      Ok(r)
+   }
+   fn on_recv_headers(&mut self) -> Result<usize, serialize::Error> {
+      let mut r = 0usize;
+      let mut msg = protocol::VerAckMessage::default();
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      println!("recv message: {:?}", &msg);
+      Ok(r)
+   }
+   fn on_recv_block(&mut self) -> Result<usize, serialize::Error> {
+      let mut r = 0usize;
+      let mut msg = protocol::VerAckMessage::default();
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      println!("recv message: {:?}", &msg);
+      Ok(r)
+   }
+   fn on_recv_getaddr(&mut self) -> Result<usize, serialize::Error> {
+      let mut r = 0usize;
+      let mut msg = protocol::VerAckMessage::default();
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      println!("recv message: {:?}", &msg);
+      Ok(r)
+   }
+   fn on_recv_mempool(&mut self) -> Result<usize, serialize::Error> {
+      let mut r = 0usize;
+      let mut msg = protocol::VerAckMessage::default();
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      println!("recv message: {:?}", &msg);
+      Ok(r)
+   }
+   fn on_recv_ping(&mut self) -> Result<usize, serialize::Error> {
+      let mut r = 0usize;
+      let mut msg = protocol::VerAckMessage::default();
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      println!("recv message: {:?}", &msg);
+      Ok(r)
+   }
+   fn on_recv_pong(&mut self) -> Result<usize, serialize::Error> {
+      let mut r = 0usize;
+      let mut msg = protocol::VerAckMessage::default();
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      println!("recv message: {:?}", &msg);
+      Ok(r)
+   }
+   fn on_recv_alert(&mut self) -> Result<usize, serialize::Error> {
+      let mut r = 0usize;
+      let mut msg = protocol::VerAckMessage::default();
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      println!("recv message: {:?}", &msg);
+      Ok(r)
+   }
+   fn on_recv_notfound(&mut self) -> Result<usize, serialize::Error> {
+      let mut r = 0usize;
+      let mut msg = protocol::VerAckMessage::default();
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      println!("recv message: {:?}", &msg);
+      Ok(r)
+   }
+   fn on_recv_filterload(&mut self) -> Result<usize, serialize::Error> {
+      let mut r = 0usize;
+      let mut msg = protocol::VerAckMessage::default();
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      println!("recv message: {:?}", &msg);
+      Ok(r)
+   }
+   fn on_recv_filteradd(&mut self) -> Result<usize, serialize::Error> {
+      let mut r = 0usize;
+      let mut msg = protocol::VerAckMessage::default();
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      println!("recv message: {:?}", &msg);
+      Ok(r)
+   }
+   fn on_recv_filterclear(&mut self) -> Result<usize, serialize::Error> {
+      let mut r = 0usize;
+      let mut msg = protocol::VerAckMessage::default();
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      println!("recv message: {:?}", &msg);
+      Ok(r)
+   }
+   fn on_recv_reject(&mut self) -> Result<usize, serialize::Error> {
+      let mut r = 0usize;
+      let mut msg = protocol::VerAckMessage::default();
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      println!("recv message: {:?}", &msg);
+      Ok(r)
+   }
+   fn on_recv_sendheaders(&mut self) -> Result<usize, serialize::Error> {
+      let mut r = 0usize;
+      let mut msg = protocol::VerAckMessage::default();
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      println!("recv message: {:?}", &msg);
       Ok(r)
    }
    fn on_recv_unknown(&mut self) -> Result<usize, serialize::Error> {

@@ -1,13 +1,19 @@
 use std;
 use ::serialize::{self, Serializable};
 
-#[derive(Debug,Default)]
+#[derive(Debug,Clone,Default)]
 pub struct Address {
    pub services: u64,
    pub time : u32,
    pub port : u16, //host order
    pub ip   : [u8;16], //network order
 }
+impl std::fmt::Display for Address {
+   fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+      write!(f, "ip={:?}, port={}", self.ip, self.port)
+   }
+}
+
 impl Address {
    pub fn new(services_:u64) -> Address {
       Address{ services:services_, time:100000000, port:0, ip:[0u8;16] }

@@ -28,6 +28,11 @@ impl VersionMessage {
       }
    }
 }
+impl std::fmt::Display for VersionMessage {
+   fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+      write!(f, "Version(ver={}, services={}, time={}, me={}, you={}, nonce={}, subv={})", self.version, self.services, self.time, self.addr_me, self.addr_you, self.nonce, self.subversion)
+   }
+}
 
 impl Serializable for VersionMessage {
    fn get_serialize_size(&self) -> usize {

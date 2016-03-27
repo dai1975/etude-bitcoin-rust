@@ -74,6 +74,11 @@ impl Serializable for Inv {
 pub struct InvMessage {
    pub invs : Vec<Inv>,
 }
+impl std::fmt::Display for InvMessage {
+   fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+      write!(f, "Inv(len={})", self.invs.len())
+   }
+}
 
 impl Serializable for InvMessage {
    fn get_serialize_size(&self) -> usize {
