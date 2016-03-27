@@ -87,7 +87,7 @@ impl Client {
    fn send_version(&mut self) -> Result< (), serialize::Error > {
       if self.stream.is_none() { try!(Err(io::Error::new(io::ErrorKind::NotConnected, "not connected"))) }
 
-      let mut msg = protocol::VersionMessage::new();
+      let mut msg = protocol::VersionMessage::default();
       {
          let s = self.stream.as_ref().unwrap();
          msg.addr_me.set_services(0).set_ip(&s.local_addr().unwrap());
