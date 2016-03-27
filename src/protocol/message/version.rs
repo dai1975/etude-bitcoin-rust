@@ -4,7 +4,7 @@ use ::serialize::{self, Serializable, LimitedString};
 use super::Address;
 use super::header::MAX_SUBVERSION_LENGTH;
 
-#[derive(Debug,Default)]
+#[derive(Debug)]
 pub struct VersionMessage {
    pub version   : i32,
    pub services  : u64,
@@ -15,8 +15,8 @@ pub struct VersionMessage {
    pub subversion: String,
 }
 
-impl VersionMessage {
-   pub fn new() -> VersionMessage {
+impl Default for VersionMessage {
+   fn default() -> VersionMessage {
       VersionMessage {
          version : ::protocol::PROTOCOL_VERSION,
          services : 0,
