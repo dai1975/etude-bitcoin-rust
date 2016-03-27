@@ -22,24 +22,24 @@ impl Serializable for BlockHeader {
    fn get_serialize_size(&self) -> usize {
       4 + 32 + 32 + 4 + 4 + 4
    }
-   fn serialize(&self, io:&mut std::io::Write) -> serialize::Result {
+   fn serialize(&self, io:&mut std::io::Write, stype:i32) -> serialize::Result {
       let mut r:usize = 0;
-      r += try!(self.version.serialize(io));
-      r += try!(self.hash_prev_block.serialize(io));
-      r += try!(self.hash_merkle_root.serialize(io));
-      r += try!(self.time.serialize(io));
-      r += try!(self.bits.serialize(io));
-      r += try!(self.nonce.serialize(io));
+      r += try!(self.version.serialize(io, stype));
+      r += try!(self.hash_prev_block.serialize(io, stype));
+      r += try!(self.hash_merkle_root.serialize(io, stype));
+      r += try!(self.time.serialize(io, stype));
+      r += try!(self.bits.serialize(io, stype));
+      r += try!(self.nonce.serialize(io, stype));
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read) -> serialize::Result {
+   fn unserialize(&mut self, io:&mut std::io::Read, stype:i32) -> serialize::Result {
       let mut r:usize = 0;
-      r += try!(self.version.unserialize(io));
-      r += try!(self.hash_prev_block.unserialize(io));
-      r += try!(self.hash_merkle_root.unserialize(io));
-      r += try!(self.time.unserialize(io));
-      r += try!(self.bits.unserialize(io));
-      r += try!(self.nonce.unserialize(io));
+      r += try!(self.version.unserialize(io, stype));
+      r += try!(self.hash_prev_block.unserialize(io, stype));
+      r += try!(self.hash_merkle_root.unserialize(io, stype));
+      r += try!(self.time.unserialize(io, stype));
+      r += try!(self.bits.unserialize(io, stype));
+      r += try!(self.nonce.unserialize(io, stype));
       Ok(r)
    }
 }

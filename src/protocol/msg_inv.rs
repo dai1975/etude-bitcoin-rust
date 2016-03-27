@@ -17,18 +17,18 @@ impl Serializable for MessageBlockType {
    fn get_serialize_size(&self) -> usize {
       4
    }
-   fn serialize(&self, io:&mut std::io::Write) -> serialize::Result {
+   fn serialize(&self, io:&mut std::io::Write, stype:i32) -> serialize::Result {
       let tmp:u32 = match *self {
          MessageBlockType::Tx => 1,
          MessageBlockType::Block => 2,
          MessageBlockType::FilteredBlock => 3,
       };
-      tmp.serialize(io)
+      tmp.serialize(io, stype)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read) -> serialize::Result {
+   fn unserialize(&mut self, io:&mut std::io::Read, stype:i32) -> serialize::Result {
       let mut r:usize = 0;
       let mut tmp:u32 = 0;
-      r += try!(tmp.unserialize(io));
+      r += try!(tmp.unserialize(io, stype));
       match tmp {
          1 => *self = MessageBlockType::Tx,
          2 => *self = MessageBlockType::Block,
@@ -57,16 +57,16 @@ impl Serializable for Inv {
    fn get_serialize_size(&self) -> usize {
       4 + 32
    }
-   fn serialize(&self, io:&mut std::io::Write) -> serialize::Result {
+   fn serialize(&self, io:&mut std::io::Write, stype:i32) -> serialize::Result {
       let mut r = 0usize;
-      r += try!(self.blocktype.serialize(io));
-      r += try!(self.hash.serialize(io));
+      r += try!(self.blocktype.serialize(io, stype));
+      r += try!(self.hash.serialize(io, stype));
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read) -> serialize::Result {
+   fn unserialize(&mut self, io:&mut std::io::Read, stype:i32) -> serialize::Result {
       let mut r = 0usize;
-      r += try!(self.blocktype.unserialize(io));
-      r += try!(self.hash.unserialize(io));
+      r += try!(self.blocktype.unserialize(io, stype));
+      r += try!(self.hash.unserialize(io, stype));
       Ok(r)
    }
 }
@@ -85,11 +85,11 @@ impl Serializable for InvMessage {
    fn get_serialize_size(&self) -> usize {
       self.invs.get_serialize_size()
    }
-   fn serialize(&self, io:&mut std::io::Write) -> serialize::Result {
-      self.invs.serialize(io)
+   fn serialize(&self, io:&mut std::io::Write, stype:i32) -> serialize::Result {
+      self.invs.serialize(io, stype)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read) -> serialize::Result {
-      self.invs.unserialize(io)
+   fn unserialize(&mut self, io:&mut std::io::Read, stype:i32) -> serialize::Result {
+      self.invs.unserialize(io, stype)
    }
 }
 
@@ -98,9 +98,9 @@ impl Serializable for InvMessage {
 fn test_serialize_inv() {
    let mut h = InvMessage::default();
    {
-      h.invs.push(Inv::new(MessageBlockType::Tx, [0u8;32]));
-      h.invs.push(Inv::new(MessageBlockType::Block, [0u8;32]));
-      h.invs.push(Inv::new(MessageBlockType::FilteredBlock, [0u8;32]));
+      h.invs.push(Inv::new(MessageBlockType::Tx, UInt256::default()));
+      h.invs.push(Inv::new(MessageBlockType::Block, UInt256::default()));
+      h.invs.push(Inv::new(MessageBlockType::FilteredBlock, UInt256::default()));
       h.invs[0].hash[0] = 128u8;
       h.invs[1].hash[0] = 129u8;
       h.invs[2].hash[0] = 130u8;
@@ -114,7 +114,7 @@ fn test_serialize_inv() {
    ];
 
    let buf = &mut vec![0; 0];
-   h.serialize(buf).unwrap();
+   h.serialize(buf, ::serialize::SER_NET).unwrap();
    assert_eq!(buf.len(), exp.len());
 
    {
@@ -135,22 +135,22 @@ fn test_unserialize_inv() {
    ];
 
    let mut h = InvMessage::default();
-   h.unserialize(&mut &exp[..]).unwrap();
+   h.unserialize(&mut &exp[..], serialize::SER_NET).unwrap();
    assert_eq!(3, h.invs.len());
    {
       let inv = &h.invs[0];
       assert_eq!(MessageBlockType::Tx, inv.blocktype);
-      assert_eq!([128,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,], inv.hash);
+      assert_eq!([128u8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,], inv.hash.data);
    }
    {
       let inv = &h.invs[1];
       assert_eq!(MessageBlockType::Block, inv.blocktype);
-      assert_eq!([129,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,], inv.hash);
+      assert_eq!([129u8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,], inv.hash.data);
    }
    {
       let inv = &h.invs[2];
       assert_eq!(MessageBlockType::FilteredBlock, inv.blocktype);
-      assert_eq!([130,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,], inv.hash);
+      assert_eq!([130,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,], inv.hash.data);
    }
 }
 

@@ -17,11 +17,11 @@ impl Serializable for GetDataMessage {
    fn get_serialize_size(&self) -> usize {
       self.addrs.get_serialize_size()
    }
-   fn serialize(&self, io:&mut std::io::Write) -> serialize::Result {
-      self.addrs.serialize(io)
+   fn serialize(&self, io:&mut std::io::Write, stype:i32) -> serialize::Result {
+      self.addrs.serialize(io, stype)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read) -> serialize::Result {
-      self.addrs.unserialize(io)
+   fn unserialize(&mut self, io:&mut std::io::Read, stype:i32) -> serialize::Result {
+      self.addrs.unserialize(io, stype)
    }
 }
 

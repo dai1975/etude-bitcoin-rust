@@ -101,7 +101,7 @@ impl Serializable for MessageHeader {
 fn test_serialize_header() {
    let h = MessageHeader::new(&[1u8, 2u8, 3u8, 4u8], &COMMAND_VERSION, 123u32, 987u32);
    let buf = &mut vec![0; 0]; //Vec::with_capacity(128usize);
-   assert_matches!(h.serialize(buf), Ok(24usize));
+   assert_matches!(h.serialize(buf, ::serialize::SER_NET), Ok(24usize));
    assert_eq!([1, 2, 3, 4, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0, 0, 0, 0, 0, 123, 0, 0, 0, 219, 3, 0, 0],
               buf.as_slice());
 }

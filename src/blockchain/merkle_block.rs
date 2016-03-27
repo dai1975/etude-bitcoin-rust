@@ -18,16 +18,16 @@ impl Serializable for MerkleBlock {
    fn get_serialize_size(&self) -> usize {
       self.header.get_serialize_size() + self.txn.get_serialize_size()
    }
-   fn serialize(&self, io:&mut std::io::Write) -> serialize::Result {
+   fn serialize(&self, io:&mut std::io::Write, stype:i32) -> serialize::Result {
       let mut r:usize = 0;
-      r += try!(self.header.serialize(io));
-      r += try!(self.txn.serialize(io));
+      r += try!(self.header.serialize(io, stype));
+      r += try!(self.txn.serialize(io, stype));
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read) -> serialize::Result {
+   fn unserialize(&mut self, io:&mut std::io::Read, stype:i32) -> serialize::Result {
       let mut r:usize = 0;
-      r += try!(self.header.unserialize(io));
-      r += try!(self.txn.unserialize(io));
+      r += try!(self.header.unserialize(io, stype));
+      r += try!(self.txn.unserialize(io, stype));
       Ok(r)
    }
 }

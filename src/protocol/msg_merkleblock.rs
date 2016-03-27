@@ -16,11 +16,11 @@ impl Serializable for MerkleBlockMessage {
    fn get_serialize_size(&self) -> usize {
       self.block.get_serialize_size()
    }
-   fn serialize(&self, io:&mut std::io::Write) -> serialize::Result {
-      self.block.serialize(io)
+   fn serialize(&self, io:&mut std::io::Write, stype:i32) -> serialize::Result {
+      self.block.serialize(io, stype)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read) -> serialize::Result {
-      self.block.unserialize(io)
+   fn unserialize(&mut self, io:&mut std::io::Read, stype:i32) -> serialize::Result {
+      self.block.unserialize(io, stype)
    }
 }
 

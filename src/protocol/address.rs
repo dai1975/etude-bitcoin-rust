@@ -41,20 +41,20 @@ impl Serializable for Address {
    fn get_serialize_size(&self) -> usize {
       8 + 2 + 16
    }
-   fn serialize(&self, io:&mut std::io::Write) -> serialize::Result {
+   fn serialize(&self, io:&mut std::io::Write, stype:i32) -> serialize::Result {
       let mut r = 0usize;
-      r += try!(self.services.serialize(io));
-      r += try!(self.ip.serialize(io));
-      r += try!(self.port.to_le().serialize(io));
+      r += try!(self.services.serialize(io, stype));
+      r += try!(self.ip.serialize(io, stype));
+      r += try!(self.port.to_le().serialize(io, stype));
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read) -> serialize::Result {
+   fn unserialize(&mut self, io:&mut std::io::Read, stype:i32) -> serialize::Result {
       let mut r = 0usize;
-      r += try!(self.services.unserialize(io));
-      r += try!(self.ip.unserialize(io));
+      r += try!(self.services.unserialize(io, stype));
+      r += try!(self.ip.unserialize(io, stype));
       {
          let mut p:u16 = 0;
-         r += try!(p.unserialize(io));
+         r += try!(p.unserialize(io, stype));
          self.port = u16::from_le(p);
       }
       Ok(r)

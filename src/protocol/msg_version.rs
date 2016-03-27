@@ -44,28 +44,28 @@ impl Serializable for VersionMessage {
          + self.nonce.get_serialize_size()
          + LimitedString::GetSerializeSize(&*self.subversion, MAX_SUBVERSION_LENGTH)
    }
-   fn serialize(&self, io:&mut std::io::Write) -> serialize::Result {
+   fn serialize(&self, io:&mut std::io::Write, stype:i32) -> serialize::Result {
       let mut r = 0usize;
-      r += try!(self.version.serialize(io));
-      r += try!(self.services.serialize(io));
-      r += try!(self.time.serialize(io));
-      r += try!(self.addr_me.serialize(io));
-      r += try!(self.addr_you.serialize(io));
-      r += try!(self.nonce.serialize(io));
-      r += try!(LimitedString::new(&*self.subversion, MAX_SUBVERSION_LENGTH).serialize(io));
+      r += try!(self.version.serialize(io, stype));
+      r += try!(self.services.serialize(io, stype));
+      r += try!(self.time.serialize(io, stype));
+      r += try!(self.addr_me.serialize(io, stype));
+      r += try!(self.addr_you.serialize(io, stype));
+      r += try!(self.nonce.serialize(io, stype));
+      r += try!(LimitedString::new(&*self.subversion, MAX_SUBVERSION_LENGTH).serialize(io, stype));
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read) -> serialize::Result {
+   fn unserialize(&mut self, io:&mut std::io::Read, stype:i32) -> serialize::Result {
       let mut r = 0usize;
-      r += try!(self.version.unserialize(io));
-      r += try!(self.services.unserialize(io));
-      r += try!(self.time.unserialize(io));
-      r += try!(self.addr_me.unserialize(io));
-      r += try!(self.addr_you.unserialize(io));
-      r += try!(self.nonce.unserialize(io));
+      r += try!(self.version.unserialize(io, stype));
+      r += try!(self.services.unserialize(io, stype));
+      r += try!(self.time.unserialize(io, stype));
+      r += try!(self.addr_me.unserialize(io, stype));
+      r += try!(self.addr_you.unserialize(io, stype));
+      r += try!(self.nonce.unserialize(io, stype));
       {
          let mut ls = LimitedString::new("", MAX_SUBVERSION_LENGTH);
-         r += try!(ls.unserialize(io));
+         r += try!(ls.unserialize(io, stype));
          self.subversion = ls.string;
       }
       Ok(r)

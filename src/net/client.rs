@@ -4,8 +4,7 @@
 use std;
 use std::io::{self,Read,Write};
 use protocol;
-use serialize;
-use serialize::Serializable;
+use serialize::{self, Serializable};
 
 struct ByteBuf<'a>(&'a [u8]);
 impl<'a> std::fmt::LowerHex for ByteBuf<'a> {
@@ -22,6 +21,7 @@ pub struct Client {
    recv_buffer: super::RingBuffer,
    recv_mode: i32,
    recv_header: protocol::MessageHeader,
+   serialize_type: i32,
 }
 
 impl Client {
@@ -31,6 +31,7 @@ impl Client {
          recv_buffer: super::RingBuffer::new(1280),
          recv_mode: 0,
          recv_header: protocol::MessageHeader::default(),
+         serialize_type: serialize::SER_NET,
       }
    }
    pub fn run(&mut self, addr: String) -> Result<bool,serialize::Error> {
@@ -68,9 +69,9 @@ impl Client {
       let hdrsize = hdr.get_serialize_size();
       let objsize = obj.get_serialize_size();
       let mut buf = vec![0u8; hdrsize + objsize];
-      try!(obj.serialize(&mut &mut buf[hdrsize..])); //impl Write for &mut[u8] なので、&mut Write にするには &mut &mut[u8]
+      try!(obj.serialize(&mut &mut buf[hdrsize..], self.serialize_type));
       hdr.set_data("version", &buf[hdrsize..]);
-      try!(hdr.serialize(&mut &mut buf[0..]));
+      try!(hdr.serialize(&mut &mut buf[0..], self.serialize_type));
 
       println!("sent:");
       println!("{:x}", ByteBuf(&buf[..]));
@@ -118,7 +119,7 @@ impl Client {
    fn on_recv(&mut self) -> Result<usize, serialize::Error> {
       if self.recv_mode == 0 { //recv header
          if self.recv_buffer.readable_size() < protocol::MessageHeader::GetSerializableSize() { return Ok(0) };
-         let r = try!(self.recv_header.unserialize(&mut self.recv_buffer.as_slice()));
+         let r = try!(self.recv_header.unserialize(&mut self.recv_buffer.as_slice(), self.serialize_type));
          self.recv_buffer.skip_read(r);
          println!("recv header: {}", &self.recv_header);
          self.recv_mode = 1;
@@ -160,154 +161,154 @@ impl Client {
    fn on_recv_version(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
       let mut msg = protocol::VersionMessage::default();
-      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), self.serialize_type));
       println!("recv message: {:?}", &msg);
       Ok(r)
    }
    fn on_recv_verack(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
       let mut msg = protocol::VerAckMessage::default();
-      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), self.serialize_type));
       println!("recv message: {:?}", &msg);
       Ok(r)
    }
    fn on_recv_addr(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
       let mut msg = protocol::AddrMessage::default();
-      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), self.serialize_type));
       println!("recv message: {:?}", &msg);
       Ok(r)
    }
    fn on_recv_inv(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
       let mut msg = protocol::InvMessage::default();
-      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), self.serialize_type));
       println!("recv message: {:?}", &msg);
       Ok(r)
    }
    fn on_recv_getdata(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
       let mut msg = protocol::GetDataMessage::default();
-      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), self.serialize_type));
       println!("recv message: {:?}", &msg);
       Ok(r)
    }
    fn on_recv_merkleblock(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
       let mut msg = protocol::MerkleBlockMessage::default();
-      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), self.serialize_type));
       println!("recv message: {:?}", &msg);
       Ok(r)
    }
    fn on_recv_getblocks(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
       let mut msg = protocol::VerAckMessage::default();
-      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), self.serialize_type));
       println!("recv message: {:?}", &msg);
       Ok(r)
    }
    fn on_recv_getheaders(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
       let mut msg = protocol::VerAckMessage::default();
-      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), self.serialize_type));
       println!("recv message: {:?}", &msg);
       Ok(r)
    }
    fn on_recv_tx(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
       let mut msg = protocol::VerAckMessage::default();
-      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), self.serialize_type));
       println!("recv message: {:?}", &msg);
       Ok(r)
    }
    fn on_recv_headers(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
       let mut msg = protocol::VerAckMessage::default();
-      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), self.serialize_type));
       println!("recv message: {:?}", &msg);
       Ok(r)
    }
    fn on_recv_block(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
       let mut msg = protocol::VerAckMessage::default();
-      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), self.serialize_type));
       println!("recv message: {:?}", &msg);
       Ok(r)
    }
    fn on_recv_getaddr(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
       let mut msg = protocol::VerAckMessage::default();
-      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), self.serialize_type));
       println!("recv message: {:?}", &msg);
       Ok(r)
    }
    fn on_recv_mempool(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
       let mut msg = protocol::VerAckMessage::default();
-      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), self.serialize_type));
       println!("recv message: {:?}", &msg);
       Ok(r)
    }
    fn on_recv_ping(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
       let mut msg = protocol::VerAckMessage::default();
-      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), self.serialize_type));
       println!("recv message: {:?}", &msg);
       Ok(r)
    }
    fn on_recv_pong(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
       let mut msg = protocol::VerAckMessage::default();
-      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), self.serialize_type));
       println!("recv message: {:?}", &msg);
       Ok(r)
    }
    fn on_recv_alert(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
       let mut msg = protocol::VerAckMessage::default();
-      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), self.serialize_type));
       println!("recv message: {:?}", &msg);
       Ok(r)
    }
    fn on_recv_notfound(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
       let mut msg = protocol::VerAckMessage::default();
-      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), self.serialize_type));
       println!("recv message: {:?}", &msg);
       Ok(r)
    }
    fn on_recv_filterload(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
       let mut msg = protocol::VerAckMessage::default();
-      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), self.serialize_type));
       println!("recv message: {:?}", &msg);
       Ok(r)
    }
    fn on_recv_filteradd(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
       let mut msg = protocol::VerAckMessage::default();
-      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), self.serialize_type));
       println!("recv message: {:?}", &msg);
       Ok(r)
    }
    fn on_recv_filterclear(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
       let mut msg = protocol::VerAckMessage::default();
-      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), self.serialize_type));
       println!("recv message: {:?}", &msg);
       Ok(r)
    }
    fn on_recv_reject(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
       let mut msg = protocol::VerAckMessage::default();
-      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), self.serialize_type));
       println!("recv message: {:?}", &msg);
       Ok(r)
    }
    fn on_recv_sendheaders(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
       let mut msg = protocol::VerAckMessage::default();
-      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice()));
+      r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), self.serialize_type));
       println!("recv message: {:?}", &msg);
       Ok(r)
    }
