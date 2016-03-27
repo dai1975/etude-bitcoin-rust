@@ -189,7 +189,36 @@ impl Serializable for i64 {
    }
 }
 
-pub type UInt256 = [u8;32];
+#[derive(Debug,Default,Clone)]
+pub struct UInt256 {
+   pub data: [u8;32],
+}
+impl UInt256 {
+   pub fn as_slice(&self) -> &[u8] {
+      &self.data[..]
+   }
+}
+impl std::fmt::Display for UInt256 {
+   fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+      for byte in &self.data {
+         try!( f.write_fmt(format_args!("{:02x}", byte)));
+      }
+      Ok(())
+   }
+}
+impl Serializable for UInt256 {
+   fn get_serialize_size(&self) -> usize {
+      32
+   }
+   fn serialize(&self, io: &mut std::io::Write) -> Result {
+      try!(io.write_all(&self.data));
+      Ok(32)
+   }
+   fn unserialize(&mut self, io: &mut std::io::Read) -> Result {
+      try!(io.read_exact(&mut self.data));
+      Ok(32)
+   }
+}
 
 pub struct CompactSize {
    pub value:u64,
