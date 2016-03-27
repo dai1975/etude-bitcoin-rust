@@ -45,6 +45,7 @@ pub struct Inv {
    pub hash:      UInt256,
 }
 impl Inv {
+   #[allow(dead_code)]
    pub fn new(blocktype_: MessageBlockType, hash_: UInt256) -> Inv {
       Inv {
          blocktype: blocktype_,

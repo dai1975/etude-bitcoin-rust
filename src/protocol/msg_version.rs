@@ -2,7 +2,7 @@ use std;
 extern crate time;
 use ::serialize::{self, Serializable, LimitedString};
 use super::Address;
-use super::header::MAX_SUBVERSION_LENGTH;
+use super::message_header::MAX_SUBVERSION_LENGTH;
 
 #[derive(Debug)]
 pub struct VersionMessage {
