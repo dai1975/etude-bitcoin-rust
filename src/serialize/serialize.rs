@@ -49,7 +49,7 @@ pub const SER_DISK:i32    = 1 << 1;
 pub const SER_GETHASH:i32 = 1 << 2;
 
 pub trait Serializable {
-   fn get_serialize_size(&self) -> usize;
+   fn get_serialize_size(&self, stype:i32) -> usize;
    fn serialize(&self, io:&mut std::io::Write, stype:i32) -> Result;
    fn unserialize(&mut self, io:&mut std::io::Read, stype:i32) -> Result;
 }
@@ -57,10 +57,10 @@ pub trait Serializable {
 #[macro_use]
 macro_rules! ADD_SERIALIZE_METHODS {
    ( $($x:ident),*) => {
-      fn get_serialize_size(&self) -> usize {
+      fn get_serialize_size(&self, stype:i32) -> usize {
          let mut sum = 0usize;
          $(
-            sum += self.$x.get_serialize_size();
+            sum += self.$x.get_serialize_size(stype);
          )*
          sum
       }
@@ -83,7 +83,7 @@ macro_rules! ADD_SERIALIZE_METHODS {
 }
 
 impl Serializable for u8 {
-   fn get_serialize_size(&self) -> usize {
+   fn get_serialize_size(&self, _stype:i32) -> usize {
       1
    }
    fn serialize(&self, io: &mut std::io::Write, _stype:i32) -> Result {
@@ -100,7 +100,7 @@ impl Serializable for u8 {
 }
 
 impl Serializable for u32 {
-   fn get_serialize_size(&self) -> usize {
+   fn get_serialize_size(&self, _stype:i32) -> usize {
       4
    }
    fn serialize(&self, io: &mut std::io::Write, _stype:i32) -> Result {
@@ -119,7 +119,7 @@ impl Serializable for u32 {
 }
 
 impl Serializable for i32 {
-   fn get_serialize_size(&self) -> usize {
+   fn get_serialize_size(&self, _stype:i32) -> usize {
       4
    }
    fn serialize(&self, io: &mut std::io::Write, _stype:i32) -> Result {
@@ -138,7 +138,7 @@ impl Serializable for i32 {
 }
 
 impl Serializable for u16 {
-   fn get_serialize_size(&self) -> usize {
+   fn get_serialize_size(&self, _stype:i32) -> usize {
       2
    }
    fn serialize(&self, io: &mut std::io::Write, _stype:i32) -> Result {
@@ -157,7 +157,7 @@ impl Serializable for u16 {
 }
 
 impl Serializable for u64 {
-   fn get_serialize_size(&self) -> usize {
+   fn get_serialize_size(&self, _stype:i32) -> usize {
       8
    }
    fn serialize(&self, io: &mut std::io::Write, _stype:i32) -> Result {
@@ -175,7 +175,7 @@ impl Serializable for u64 {
    }
 }
 impl Serializable for i64 {
-   fn get_serialize_size(&self) -> usize {
+   fn get_serialize_size(&self, _stype:i32) -> usize {
       8
    }
    fn serialize(&self, io: &mut std::io::Write, _stype:i32) -> Result {
@@ -227,7 +227,7 @@ impl std::fmt::Display for UInt256 {
    }
 }
 impl Serializable for UInt256 {
-   fn get_serialize_size(&self) -> usize {
+   fn get_serialize_size(&self, _stype:i32) -> usize {
       32
    }
    fn serialize(&self, io: &mut std::io::Write, _stype:i32) -> Result {
@@ -249,7 +249,7 @@ impl CompactSize {
    }
    // I beleave that the coding style which explicitely differs static method with instance method is good style.
    #[allow(non_snake_case)]
-   fn GetSerializeSize(v:u64) -> usize {
+   fn GetSerializeSize(v:u64, _stype:i32) -> usize {
       if v < 253 {
          1
       } else if v <= 0xFFFF {
@@ -306,8 +306,8 @@ impl CompactSize {
    }
 }
 impl Serializable for CompactSize {
-   fn get_serialize_size(&self) -> usize {
-      CompactSize::GetSerializeSize(self.value)
+   fn get_serialize_size(&self, stype:i32) -> usize {
+      CompactSize::GetSerializeSize(self.value, stype)
    }
    fn serialize(&self, io: &mut std::io::Write, stype:i32) -> Result {
       CompactSize::Serialize(self.value, io, stype)
@@ -318,11 +318,11 @@ impl Serializable for CompactSize {
 }
 
 impl <T> Serializable for Vec<T> where T:Clone + Default + Serializable {
-   fn get_serialize_size(&self) -> usize {
+   fn get_serialize_size(&self, stype:i32) -> usize {
       let mut r:usize = 0;
-      r += CompactSize::GetSerializeSize(self.len() as u64);
+      r += CompactSize::GetSerializeSize(self.len() as u64, stype);
       for v in self {
-         r += v.get_serialize_size();
+         r += v.get_serialize_size(stype);
       }
       r
    }
@@ -365,10 +365,10 @@ impl LimitedString {
       r
    }
    #[allow(non_snake_case)]
-   pub fn GetSerializeSize(s:&str, l:u64) -> usize {
+   pub fn GetSerializeSize(s:&str, l:u64, stype:i32) -> usize {
       let lim = std::cmp::min(l, std::u32::MAX as u64) as usize;
       let len = std::cmp::min(s.len(), lim);
-      CompactSize::GetSerializeSize(len as u64) + len
+      CompactSize::GetSerializeSize(len as u64, stype) + len
    }
    #[allow(non_snake_case)]
    pub fn Serialize(s:&str, l:u64, io: &mut std::io::Write, stype:i32) -> Result {
@@ -381,8 +381,8 @@ impl LimitedString {
    }
 }
 impl Serializable for LimitedString {
-   fn get_serialize_size(&self) -> usize {
-      LimitedString::GetSerializeSize(&*self.string, self.limit as u64)
+   fn get_serialize_size(&self, stype:i32) -> usize {
+      LimitedString::GetSerializeSize(&*self.string, self.limit as u64, stype)
    }
    fn serialize(&self, io: &mut std::io::Write, stype:i32) -> Result {
       LimitedString::Serialize(&*self.string, self.limit as u64, io, stype)
@@ -410,7 +410,7 @@ impl Serializable for LimitedString {
 }
 
 impl Serializable for [u8] {
-   fn get_serialize_size(&self) -> usize {
+   fn get_serialize_size(&self, _stype:i32) -> usize {
       self.len()
    }
    fn serialize(&self, io:&mut std::io::Write, _stype:i32) -> Result {
@@ -426,7 +426,7 @@ impl Serializable for [u8] {
 macro_rules! IMPL_ARRAY {
    ($n:expr) => {
       impl Serializable for [u8;$n] {
-         fn get_serialize_size(&self) -> usize {
+         fn get_serialize_size(&self, _stype:i32) -> usize {
             $n
          }
          fn serialize(&self, io:&mut std::io::Write, _stype:i32) -> Result {

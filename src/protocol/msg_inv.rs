@@ -14,7 +14,7 @@ impl Default for MessageBlockType {
    }
 }
 impl Serializable for MessageBlockType {
-   fn get_serialize_size(&self) -> usize {
+   fn get_serialize_size(&self, _stype:i32) -> usize {
       4
    }
    fn serialize(&self, io:&mut std::io::Write, stype:i32) -> serialize::Result {
@@ -54,7 +54,7 @@ impl Inv {
    }
 }
 impl Serializable for Inv {
-   fn get_serialize_size(&self) -> usize {
+   fn get_serialize_size(&self, _stype:i32) -> usize {
       4 + 32
    }
    fn serialize(&self, io:&mut std::io::Write, stype:i32) -> serialize::Result {
@@ -82,8 +82,8 @@ impl std::fmt::Display for InvMessage {
 }
 
 impl Serializable for InvMessage {
-   fn get_serialize_size(&self) -> usize {
-      self.invs.get_serialize_size()
+   fn get_serialize_size(&self, stype:i32) -> usize {
+      self.invs.get_serialize_size(stype)
    }
    fn serialize(&self, io:&mut std::io::Write, stype:i32) -> serialize::Result {
       self.invs.serialize(io, stype)

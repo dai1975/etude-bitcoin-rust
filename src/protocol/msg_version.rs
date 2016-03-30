@@ -35,14 +35,14 @@ impl std::fmt::Display for VersionMessage {
 }
 
 impl Serializable for VersionMessage {
-   fn get_serialize_size(&self) -> usize {
-      self.version.get_serialize_size()
-         + self.services.get_serialize_size()
-         + self.time.get_serialize_size()
-         + self.addr_me.get_serialize_size()
-         + self.addr_you.get_serialize_size()
-         + self.nonce.get_serialize_size()
-         + LimitedString::GetSerializeSize(&*self.subversion, MAX_SUBVERSION_LENGTH)
+   fn get_serialize_size(&self, stype:i32) -> usize {
+      self.version.get_serialize_size(stype)
+         + self.services.get_serialize_size(stype)
+         + self.time.get_serialize_size(stype)
+         + self.addr_me.get_serialize_size(stype)
+         + self.addr_you.get_serialize_size(stype)
+         + self.nonce.get_serialize_size(stype)
+         + LimitedString::GetSerializeSize(&*self.subversion, MAX_SUBVERSION_LENGTH, stype)
    }
    fn serialize(&self, io:&mut std::io::Write, stype:i32) -> serialize::Result {
       let mut r = 0usize;

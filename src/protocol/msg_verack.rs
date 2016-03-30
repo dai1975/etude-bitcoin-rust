@@ -11,7 +11,7 @@ impl std::fmt::Display for VerAckMessage {
 }
 
 impl Serializable for VerAckMessage {
-   fn get_serialize_size(&self) -> usize {
+   fn get_serialize_size(&self, _stype:i32) -> usize {
       0usize
    }
    fn serialize(&self, _io:&mut std::io::Write, _stype:i32) -> serialize::Result {

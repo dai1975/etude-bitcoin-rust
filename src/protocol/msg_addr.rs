@@ -14,8 +14,8 @@ impl std::fmt::Display for AddrMessage {
 }
 
 impl Serializable for AddrMessage {
-   fn get_serialize_size(&self) -> usize {
-      self.addrs.get_serialize_size()
+   fn get_serialize_size(&self, stype:i32) -> usize {
+      self.addrs.get_serialize_size(stype)
    }
    fn serialize(&self, io:&mut std::io::Write, stype:i32) -> serialize::Result {
       self.addrs.serialize(io, stype)

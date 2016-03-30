@@ -19,7 +19,7 @@ impl std::fmt::Display for BlockHeader {
 }
 
 impl Serializable for BlockHeader {
-   fn get_serialize_size(&self) -> usize {
+   fn get_serialize_size(&self, _stype:i32) -> usize {
       4 + 32 + 32 + 4 + 4 + 4
    }
    fn serialize(&self, io:&mut std::io::Write, stype:i32) -> serialize::Result {

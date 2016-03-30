@@ -23,7 +23,7 @@ impl std::fmt::Display for PartialMerkleTree {
 }
 
 impl Serializable for PartialMerkleTree {
-   fn get_serialize_size(&self) -> usize {
+   fn get_serialize_size(&self, _stype:i32) -> usize {
       4 + (self.bits.len()+7)/8 + 32*self.hashes.len()
    }
    fn serialize(&self, io:&mut std::io::Write, stype:i32) -> serialize::Result {

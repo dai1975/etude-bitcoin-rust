@@ -66,8 +66,8 @@ impl Client {
       }
 
       let mut hdr = protocol::MessageHeader::default();
-      let hdrsize = hdr.get_serialize_size();
-      let objsize = obj.get_serialize_size();
+      let hdrsize = hdr.get_serialize_size(self.serialize_type);
+      let objsize = obj.get_serialize_size(self.serialize_type);
       let mut buf = vec![0u8; hdrsize + objsize];
       try!(obj.serialize(&mut &mut buf[hdrsize..], self.serialize_type));
       hdr.set_data("version", &buf[hdrsize..]);

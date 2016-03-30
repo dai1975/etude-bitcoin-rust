@@ -15,8 +15,8 @@ impl std::fmt::Display for MerkleBlock {
 }
 
 impl Serializable for MerkleBlock {
-   fn get_serialize_size(&self) -> usize {
-      self.header.get_serialize_size() + self.txn.get_serialize_size()
+   fn get_serialize_size(&self, stype:i32) -> usize {
+      self.header.get_serialize_size(stype) + self.txn.get_serialize_size(stype)
    }
    fn serialize(&self, io:&mut std::io::Write, stype:i32) -> serialize::Result {
       let mut r:usize = 0;

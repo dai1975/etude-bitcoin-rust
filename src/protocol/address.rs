@@ -38,7 +38,7 @@ impl Address {
    }
 }
 impl Serializable for Address {
-   fn get_serialize_size(&self) -> usize {
+   fn get_serialize_size(&self, _stype:i32) -> usize {
       8 + 2 + 16
    }
    fn serialize(&self, io:&mut std::io::Write, stype:i32) -> serialize::Result {
