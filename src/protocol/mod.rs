@@ -9,6 +9,7 @@ pub use self::msg_inv::InvMessage;
 pub use self::msg_getdata::GetDataMessage;
 pub use self::msg_merkleblock::MerkleBlockMessage;
 pub use self::msg_getblocks::GetBlocksMessage;
+pub use self::msg_getheaders::GetHeadersMessage;
 
 mod address;
 pub mod message_header;
@@ -19,4 +20,4 @@ mod msg_inv;
 mod msg_getdata;
 mod msg_merkleblock;
 mod msg_getblocks;
-
+mod msg_getheaders;
