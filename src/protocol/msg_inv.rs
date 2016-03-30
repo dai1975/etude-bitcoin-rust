@@ -13,22 +13,23 @@ impl Default for MessageBlockType {
       MessageBlockType::Tx
    }
 }
+
 impl Serializable for MessageBlockType {
-   fn get_serialize_size(&self, _stype:i32) -> usize {
+   fn get_serialize_size(&self, _ser:&serialize::SerializeParam) -> usize {
       4
    }
-   fn serialize(&self, io:&mut std::io::Write, stype:i32) -> serialize::Result {
+   fn serialize(&self, io:&mut std::io::Write, ser:&serialize::SerializeParam) -> serialize::Result {
       let tmp:u32 = match *self {
          MessageBlockType::Tx => 1,
          MessageBlockType::Block => 2,
          MessageBlockType::FilteredBlock => 3,
       };
-      tmp.serialize(io, stype)
+      tmp.serialize(io, ser)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, stype:i32) -> serialize::Result {
+   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r:usize = 0;
       let mut tmp:u32 = 0;
-      r += try!(tmp.unserialize(io, stype));
+      r += try!(tmp.unserialize(io, ser));
       match tmp {
          1 => *self = MessageBlockType::Tx,
          2 => *self = MessageBlockType::Block,
@@ -54,19 +55,19 @@ impl Inv {
    }
 }
 impl Serializable for Inv {
-   fn get_serialize_size(&self, _stype:i32) -> usize {
+   fn get_serialize_size(&self, _ser:&serialize::SerializeParam) -> usize {
       4 + 32
    }
-   fn serialize(&self, io:&mut std::io::Write, stype:i32) -> serialize::Result {
+   fn serialize(&self, io:&mut std::io::Write, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r = 0usize;
-      r += try!(self.blocktype.serialize(io, stype));
-      r += try!(self.hash.serialize(io, stype));
+      r += try!(self.blocktype.serialize(io, ser));
+      r += try!(self.hash.serialize(io, ser));
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, stype:i32) -> serialize::Result {
+   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r = 0usize;
-      r += try!(self.blocktype.unserialize(io, stype));
-      r += try!(self.hash.unserialize(io, stype));
+      r += try!(self.blocktype.unserialize(io, ser));
+      r += try!(self.hash.unserialize(io, ser));
       Ok(r)
    }
 }
@@ -82,14 +83,14 @@ impl std::fmt::Display for InvMessage {
 }
 
 impl Serializable for InvMessage {
-   fn get_serialize_size(&self, stype:i32) -> usize {
-      self.invs.get_serialize_size(stype)
+   fn get_serialize_size(&self, ser:&serialize::SerializeParam) -> usize {
+      self.invs.get_serialize_size(ser)
    }
-   fn serialize(&self, io:&mut std::io::Write, stype:i32) -> serialize::Result {
-      self.invs.serialize(io, stype)
+   fn serialize(&self, io:&mut std::io::Write, ser:&serialize::SerializeParam) -> serialize::Result {
+      self.invs.serialize(io, ser)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, stype:i32) -> serialize::Result {
-      self.invs.unserialize(io, stype)
+   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
+      self.invs.unserialize(io, ser)
    }
 }
 
@@ -114,7 +115,8 @@ fn test_serialize_inv() {
    ];
 
    let buf = &mut vec![0; 0];
-   h.serialize(buf, ::serialize::SER_NET).unwrap();
+   let ser = serialize::SerializeParam::new_net();
+   h.serialize(buf, &ser).unwrap();
    assert_eq!(buf.len(), exp.len());
 
    {
@@ -135,7 +137,8 @@ fn test_unserialize_inv() {
    ];
 
    let mut h = InvMessage::default();
-   h.unserialize(&mut &exp[..], serialize::SER_NET).unwrap();
+   let ser = serialize::SerializeParam::new_net();
+   h.unserialize(&mut &exp[..], &ser).unwrap();
    assert_eq!(3, h.invs.len());
    {
       let inv = &h.invs[0];

@@ -35,37 +35,37 @@ impl std::fmt::Display for VersionMessage {
 }
 
 impl Serializable for VersionMessage {
-   fn get_serialize_size(&self, stype:i32) -> usize {
-      self.version.get_serialize_size(stype)
-         + self.services.get_serialize_size(stype)
-         + self.time.get_serialize_size(stype)
-         + self.addr_me.get_serialize_size(stype)
-         + self.addr_you.get_serialize_size(stype)
-         + self.nonce.get_serialize_size(stype)
-         + LimitedString::GetSerializeSize(&*self.subversion, MAX_SUBVERSION_LENGTH, stype)
+   fn get_serialize_size(&self, ser:&serialize::SerializeParam) -> usize {
+      self.version.get_serialize_size(ser)
+         + self.services.get_serialize_size(ser)
+         + self.time.get_serialize_size(ser)
+         + self.addr_me.get_serialize_size(ser)
+         + self.addr_you.get_serialize_size(ser)
+         + self.nonce.get_serialize_size(ser)
+         + LimitedString::GetSerializeSize(&*self.subversion, MAX_SUBVERSION_LENGTH, ser)
    }
-   fn serialize(&self, io:&mut std::io::Write, stype:i32) -> serialize::Result {
+   fn serialize(&self, io:&mut std::io::Write, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r = 0usize;
-      r += try!(self.version.serialize(io, stype));
-      r += try!(self.services.serialize(io, stype));
-      r += try!(self.time.serialize(io, stype));
-      r += try!(self.addr_me.serialize(io, stype));
-      r += try!(self.addr_you.serialize(io, stype));
-      r += try!(self.nonce.serialize(io, stype));
-      r += try!(LimitedString::new(&*self.subversion, MAX_SUBVERSION_LENGTH).serialize(io, stype));
+      r += try!(self.version.serialize(io, ser));
+      r += try!(self.services.serialize(io, ser));
+      r += try!(self.time.serialize(io, ser));
+      r += try!(self.addr_me.serialize(io, ser));
+      r += try!(self.addr_you.serialize(io, ser));
+      r += try!(self.nonce.serialize(io, ser));
+      r += try!(LimitedString::new(&*self.subversion, MAX_SUBVERSION_LENGTH).serialize(io, ser));
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, stype:i32) -> serialize::Result {
+   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r = 0usize;
-      r += try!(self.version.unserialize(io, stype));
-      r += try!(self.services.unserialize(io, stype));
-      r += try!(self.time.unserialize(io, stype));
-      r += try!(self.addr_me.unserialize(io, stype));
-      r += try!(self.addr_you.unserialize(io, stype));
-      r += try!(self.nonce.unserialize(io, stype));
+      r += try!(self.version.unserialize(io, ser));
+      r += try!(self.services.unserialize(io, ser));
+      r += try!(self.time.unserialize(io, ser));
+      r += try!(self.addr_me.unserialize(io, ser));
+      r += try!(self.addr_you.unserialize(io, ser));
+      r += try!(self.nonce.unserialize(io, ser));
       {
          let mut ls = LimitedString::new("", MAX_SUBVERSION_LENGTH);
-         r += try!(ls.unserialize(io, stype));
+         r += try!(ls.unserialize(io, ser));
          self.subversion = ls.string;
       }
       Ok(r)

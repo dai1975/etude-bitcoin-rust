@@ -13,14 +13,14 @@ impl std::fmt::Display for MerkleBlockMessage {
 }
 
 impl Serializable for MerkleBlockMessage {
-   fn get_serialize_size(&self, stype:i32) -> usize {
-      self.block.get_serialize_size(stype)
+   fn get_serialize_size(&self, ser:&serialize::SerializeParam) -> usize {
+      self.block.get_serialize_size(ser)
    }
-   fn serialize(&self, io:&mut std::io::Write, stype:i32) -> serialize::Result {
-      self.block.serialize(io, stype)
+   fn serialize(&self, io:&mut std::io::Write, ser:&serialize::SerializeParam) -> serialize::Result {
+      self.block.serialize(io, ser)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, stype:i32) -> serialize::Result {
-      self.block.unserialize(io, stype)
+   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
+      self.block.unserialize(io, ser)
    }
 }
 

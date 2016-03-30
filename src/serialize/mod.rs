@@ -1,6 +1,7 @@
 pub use self::serialize::Error;
 pub use self::serialize::Result;
 pub use self::serialize::SerializeError;
+pub use self::serialize::SerializeParam;
 pub use self::serialize::Serializable;
 pub use self::serialize::UInt256;
 pub use self::serialize::CompactSize;

@@ -23,35 +23,35 @@ impl std::fmt::Display for PartialMerkleTree {
 }
 
 impl Serializable for PartialMerkleTree {
-   fn get_serialize_size(&self, _stype:i32) -> usize {
+   fn get_serialize_size(&self, _ser:&serialize::SerializeParam) -> usize {
       4 + (self.bits.len()+7)/8 + 32*self.hashes.len()
    }
-   fn serialize(&self, io:&mut std::io::Write, stype:i32) -> serialize::Result {
+   fn serialize(&self, io:&mut std::io::Write, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r:usize = 0;
-      r += try!(self.n_transactions.serialize(io, stype));
+      r += try!(self.n_transactions.serialize(io, ser));
       {
          let mut bytes = self.bits.to_bytes();
          for byte in &mut bytes {
             *byte = reverse_u8(*byte);
          }
-         r += try!(bytes.serialize(io, stype));
+         r += try!(bytes.serialize(io, ser));
       }         
-      r += try!(self.hashes.serialize(io, stype));
+      r += try!(self.hashes.serialize(io, ser));
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, stype:i32) -> serialize::Result {
+   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r:usize = 0;
-      r += try!(self.n_transactions.unserialize(io, stype));
+      r += try!(self.n_transactions.unserialize(io, ser));
       {
          let mut bytes:Vec<u8> = Vec::new();
-         r += try!(bytes.unserialize(io, stype));
+         r += try!(bytes.unserialize(io, ser));
 
          for byte in &mut bytes {
             *byte = reverse_u8(*byte);
          }
          self.bits = bit_vec::BitVec::from_bytes(bytes.as_slice());
       }         
-      r += try!(self.hashes.unserialize(io, stype));
+      r += try!(self.hashes.unserialize(io, ser));
       Ok(r)
    }
 }

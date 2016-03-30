@@ -38,23 +38,23 @@ impl Address {
    }
 }
 impl Serializable for Address {
-   fn get_serialize_size(&self, _stype:i32) -> usize {
+   fn get_serialize_size(&self, _ser:&serialize::SerializeParam) -> usize {
       8 + 2 + 16
    }
-   fn serialize(&self, io:&mut std::io::Write, stype:i32) -> serialize::Result {
+   fn serialize(&self, io:&mut std::io::Write, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r = 0usize;
-      r += try!(self.services.serialize(io, stype));
-      r += try!(self.ip.serialize(io, stype));
-      r += try!(self.port.to_le().serialize(io, stype));
+      r += try!(self.services.serialize(io, ser));
+      r += try!(self.ip.serialize(io, ser));
+      r += try!(self.port.to_le().serialize(io, ser));
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, stype:i32) -> serialize::Result {
+   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r = 0usize;
-      r += try!(self.services.unserialize(io, stype));
-      r += try!(self.ip.unserialize(io, stype));
+      r += try!(self.services.unserialize(io, ser));
+      r += try!(self.ip.unserialize(io, ser));
       {
          let mut p:u16 = 0;
-         r += try!(p.unserialize(io, stype));
+         r += try!(p.unserialize(io, ser));
          self.port = u16::from_le(p);
       }
       Ok(r)

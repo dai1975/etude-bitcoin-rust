@@ -1,4 +1,5 @@
 use std;
+use protocol;
 
 #[derive(Debug)]
 pub struct SerializeError {
@@ -48,34 +49,54 @@ pub const SER_NET:i32     = 1 << 0;
 pub const SER_DISK:i32    = 1 << 1;
 pub const SER_GETHASH:i32 = 1 << 2;
 
+#[derive(Debug,Clone)]
+pub struct SerializeParam {
+   pub sertype:i32,
+   pub version:i32,
+}
+impl SerializeParam {
+   pub fn new(sertype_:i32, version_:i32) -> SerializeParam {
+      SerializeParam {
+         sertype: sertype_,
+         version: version_,
+      }
+   }
+   pub fn new_net() -> SerializeParam {
+      SerializeParam {
+         sertype: SER_NET,
+         version: protocol::PROTOCOL_VERSION,
+      }
+   }
+}
+
 pub trait Serializable {
-   fn get_serialize_size(&self, stype:i32) -> usize;
-   fn serialize(&self, io:&mut std::io::Write, stype:i32) -> Result;
-   fn unserialize(&mut self, io:&mut std::io::Read, stype:i32) -> Result;
+   fn get_serialize_size(&self, ser:&SerializeParam) -> usize;
+   fn serialize(&self, io:&mut std::io::Write, ser:&SerializeParam) -> Result;
+   fn unserialize(&mut self, io:&mut std::io::Read, ser:&SerializeParam) -> Result;
 }
 
 #[macro_use]
 macro_rules! ADD_SERIALIZE_METHODS {
    ( $($x:ident),*) => {
-      fn get_serialize_size(&self, stype:i32) -> usize {
+      fn get_serialize_size(&self, ser: &::serialize::SerializeParam) -> usize {
          let mut sum = 0usize;
          $(
-            sum += self.$x.get_serialize_size(stype);
+            sum += self.$x.get_serialize_size(ser);
          )*
          sum
       }
 
-      fn serialize(&self, io:&mut std::io::Write, stype:i32) -> ::serialize::Result {
+      fn serialize(&self, io:&mut std::io::Write, ser:&::serialize::SerializeParam) -> ::serialize::Result {
          let mut r = 0usize;
          $(
-            r += try!( self.$x.serialize(io, stype) );
+            r += try!( self.$x.serialize(io, ser) );
          )*
          Ok(r)
       }
-      fn unserialize(&mut self, io:&mut std::io::Read, stype:i32) -> ::serialize::Result {
+      fn unserialize(&mut self, io:&mut std::io::Read, ser:&::serialize::SerializeParam) -> ::serialize::Result {
          let mut r = 0usize;
          $(
-            r += try!( self.$x.unserialize(io, stype) );
+            r += try!( self.$x.unserialize(io, ser) );
          )*
          Ok(r)
       }
@@ -83,15 +104,15 @@ macro_rules! ADD_SERIALIZE_METHODS {
 }
 
 impl Serializable for u8 {
-   fn get_serialize_size(&self, _stype:i32) -> usize {
+   fn get_serialize_size(&self, _ser:&SerializeParam) -> usize {
       1
    }
-   fn serialize(&self, io: &mut std::io::Write, _stype:i32) -> Result {
+   fn serialize(&self, io: &mut std::io::Write, _ser:&SerializeParam) -> Result {
       let buf: [u8; 1] = [*self];
       try!(io.write_all(&buf));
       Ok(buf.len())
    }
-   fn unserialize(&mut self, io: &mut std::io::Read, _stype:i32) -> Result {
+   fn unserialize(&mut self, io: &mut std::io::Read, _ser:&SerializeParam) -> Result {
       let mut buf: [u8; 1] = [0];
       try!(io.read_exact(&mut buf));
       *self = buf[0];
@@ -100,16 +121,16 @@ impl Serializable for u8 {
 }
 
 impl Serializable for u32 {
-   fn get_serialize_size(&self, _stype:i32) -> usize {
+   fn get_serialize_size(&self, _ser:&SerializeParam) -> usize {
       4
    }
-   fn serialize(&self, io: &mut std::io::Write, _stype:i32) -> Result {
+   fn serialize(&self, io: &mut std::io::Write, _ser:&SerializeParam) -> Result {
       let tmp = self.to_le();
       let buf: &[u8;4] = unsafe { std::mem::transmute(&tmp) };
       try!(io.write_all(buf));
       Ok(buf.len())
    }
-   fn unserialize(&mut self, io: &mut std::io::Read, _stype:i32) -> Result {
+   fn unserialize(&mut self, io: &mut std::io::Read, _ser:&SerializeParam) -> Result {
       let mut tmp:u32 = 0;
       let buf: &mut [u8;4] = unsafe { std::mem::transmute(&mut tmp) };
       try!(io.read_exact(buf));
@@ -119,16 +140,16 @@ impl Serializable for u32 {
 }
 
 impl Serializable for i32 {
-   fn get_serialize_size(&self, _stype:i32) -> usize {
+   fn get_serialize_size(&self, _ser:&SerializeParam) -> usize {
       4
    }
-   fn serialize(&self, io: &mut std::io::Write, _stype:i32) -> Result {
+   fn serialize(&self, io: &mut std::io::Write, _ser:&SerializeParam) -> Result {
       let tmp = self.to_le();
       let buf: &[u8;4] = unsafe { std::mem::transmute(&tmp) };
       try!(io.write_all(buf));
       Ok(buf.len())
    }
-   fn unserialize(&mut self, io: &mut std::io::Read, _stype:i32) -> Result {
+   fn unserialize(&mut self, io: &mut std::io::Read, _ser:&SerializeParam) -> Result {
       let mut tmp:i32 = 0;
       let buf: &mut [u8;4] = unsafe { std::mem::transmute(&mut tmp) };
       try!(io.read_exact(buf));
@@ -138,16 +159,16 @@ impl Serializable for i32 {
 }
 
 impl Serializable for u16 {
-   fn get_serialize_size(&self, _stype:i32) -> usize {
+   fn get_serialize_size(&self, _ser:&SerializeParam) -> usize {
       2
    }
-   fn serialize(&self, io: &mut std::io::Write, _stype:i32) -> Result {
+   fn serialize(&self, io: &mut std::io::Write, _ser:&SerializeParam) -> Result {
       let tmp = self.to_le();
       let buf: &[u8;2] = unsafe { std::mem::transmute(&tmp) };
       try!(io.write_all(buf));
       Ok(buf.len())
    }
-   fn unserialize(&mut self, io: &mut std::io::Read, _stype:i32) -> Result {
+   fn unserialize(&mut self, io: &mut std::io::Read, _ser:&SerializeParam) -> Result {
       let mut tmp:u16 = 0;
       let buf: &mut [u8;2] = unsafe { std::mem::transmute(&mut tmp) };
       try!(io.read_exact(buf));
@@ -157,16 +178,16 @@ impl Serializable for u16 {
 }
 
 impl Serializable for u64 {
-   fn get_serialize_size(&self, _stype:i32) -> usize {
+   fn get_serialize_size(&self, _ser:&SerializeParam) -> usize {
       8
    }
-   fn serialize(&self, io: &mut std::io::Write, _stype:i32) -> Result {
+   fn serialize(&self, io: &mut std::io::Write, _ser:&SerializeParam) -> Result {
       let tmp = self.to_le();
       let buf: &[u8;8] = unsafe { std::mem::transmute(&tmp) };
       try!(io.write_all(buf));
       Ok(buf.len())
    }
-   fn unserialize(&mut self, io: &mut std::io::Read, _stype:i32) -> Result {
+   fn unserialize(&mut self, io: &mut std::io::Read, _ser:&SerializeParam) -> Result {
       let mut tmp:u64 = 0;
       let buf: &mut [u8;8] = unsafe { std::mem::transmute(&mut tmp) };
       try!(io.read_exact(buf));
@@ -175,16 +196,16 @@ impl Serializable for u64 {
    }
 }
 impl Serializable for i64 {
-   fn get_serialize_size(&self, _stype:i32) -> usize {
+   fn get_serialize_size(&self, _ser:&SerializeParam) -> usize {
       8
    }
-   fn serialize(&self, io: &mut std::io::Write, _stype:i32) -> Result {
+   fn serialize(&self, io: &mut std::io::Write, _ser:&SerializeParam) -> Result {
       let tmp = self.to_le();
       let buf: &[u8;8] = unsafe { std::mem::transmute(&tmp) };
       try!(io.write_all(buf));
       Ok(buf.len())
    }
-   fn unserialize(&mut self, io: &mut std::io::Read, _stype:i32) -> Result {
+   fn unserialize(&mut self, io: &mut std::io::Read, _ser:&SerializeParam) -> Result {
       let mut tmp:i64 = 0;
       let buf: &mut [u8;8] = unsafe { std::mem::transmute(&mut tmp) };
       try!(io.read_exact(buf));
@@ -227,14 +248,14 @@ impl std::fmt::Display for UInt256 {
    }
 }
 impl Serializable for UInt256 {
-   fn get_serialize_size(&self, _stype:i32) -> usize {
+   fn get_serialize_size(&self, _ser:&SerializeParam) -> usize {
       32
    }
-   fn serialize(&self, io: &mut std::io::Write, _stype:i32) -> Result {
+   fn serialize(&self, io: &mut std::io::Write, _ser:&SerializeParam) -> Result {
       try!(io.write_all(&self.data));
       Ok(32)
    }
-   fn unserialize(&mut self, io: &mut std::io::Read, _stype:i32) -> Result {
+   fn unserialize(&mut self, io: &mut std::io::Read, _ser:&SerializeParam) -> Result {
       try!(io.read_exact(&mut self.data));
       Ok(32)
    }
@@ -249,7 +270,7 @@ impl CompactSize {
    }
    // I beleave that the coding style which explicitely differs static method with instance method is good style.
    #[allow(non_snake_case)]
-   fn GetSerializeSize(v:u64, _stype:i32) -> usize {
+   fn GetSerializeSize(v:u64, _ser:&SerializeParam) -> usize {
       if v < 253 {
          1
       } else if v <= 0xFFFF {
@@ -262,88 +283,88 @@ impl CompactSize {
    }
 
    #[allow(non_snake_case)]
-   fn Serialize(value:u64, io: &mut std::io::Write, stype:i32) -> Result {
+   fn Serialize(value:u64, io: &mut std::io::Write, ser:&SerializeParam) -> Result {
       let mut r = 0usize;
       if value < 253 {
          let v = value as u8;
-         r += try!(v.serialize(io, stype));
+         r += try!(v.serialize(io, ser));
       } else if value <= 0xFFFF {
          let v = value as u16;
-         r += try!(253u8.serialize(io, stype));
-         r += try!(v.serialize(io, stype));
+         r += try!(253u8.serialize(io, ser));
+         r += try!(v.serialize(io, ser));
       } else if value <= 0xFFFFFFFF {
          let v = value as u32;
-         r += try!(254u8.serialize(io, stype));
-         r += try!(v.serialize(io, stype));
+         r += try!(254u8.serialize(io, ser));
+         r += try!(v.serialize(io, ser));
       } else {
-         r += try!(255u8.serialize(io, stype));
-         r += try!(value.serialize(io, stype));
+         r += try!(255u8.serialize(io, ser));
+         r += try!(value.serialize(io, ser));
       }
       Ok(r)
    }
 
    #[allow(non_snake_case)]
-   fn Unserialize(value:&mut u64, io: &mut std::io::Read, stype:i32) -> Result {
+   fn Unserialize(value:&mut u64, io: &mut std::io::Read, ser:&SerializeParam) -> Result {
       let mut r = 0usize;
       let mut h:u8 = 0;
-      r += try!(h.unserialize(io, stype));
+      r += try!(h.unserialize(io, ser));
       if h < 253 {
          *value = h as u64;
       } else if h == 253 {
          let mut v:u16 = 0;
-         r += try!(v.unserialize(io, stype));
+         r += try!(v.unserialize(io, ser));
          *value = v as u64;
       } else if h == 254 {
          let mut v:u32 = 0;
-         r += try!(v.unserialize(io, stype));
+         r += try!(v.unserialize(io, ser));
          *value = v as u64;
       } else if h == 255 {
          let mut v:u64 = 0;
-         r += try!(v.unserialize(io, stype));
+         r += try!(v.unserialize(io, ser));
          *value = v;
       }
       Ok(r)
    }
 }
 impl Serializable for CompactSize {
-   fn get_serialize_size(&self, stype:i32) -> usize {
-      CompactSize::GetSerializeSize(self.value, stype)
+   fn get_serialize_size(&self, ser:&SerializeParam) -> usize {
+      CompactSize::GetSerializeSize(self.value, ser)
    }
-   fn serialize(&self, io: &mut std::io::Write, stype:i32) -> Result {
-      CompactSize::Serialize(self.value, io, stype)
+   fn serialize(&self, io: &mut std::io::Write, ser:&SerializeParam) -> Result {
+      CompactSize::Serialize(self.value, io, ser)
    }
-   fn unserialize(&mut self, io: &mut std::io::Read, stype:i32) -> Result {
-      CompactSize::Unserialize(&mut self.value, io, stype)
+   fn unserialize(&mut self, io: &mut std::io::Read, ser:&SerializeParam) -> Result {
+      CompactSize::Unserialize(&mut self.value, io, ser)
    }
 }
 
 impl <T> Serializable for Vec<T> where T:Clone + Default + Serializable {
-   fn get_serialize_size(&self, stype:i32) -> usize {
+   fn get_serialize_size(&self, ser:&SerializeParam) -> usize {
       let mut r:usize = 0;
-      r += CompactSize::GetSerializeSize(self.len() as u64, stype);
+      r += CompactSize::GetSerializeSize(self.len() as u64, ser);
       for v in self {
-         r += v.get_serialize_size(stype);
+         r += v.get_serialize_size(ser);
       }
       r
    }
-   fn serialize(&self, io:&mut std::io::Write, stype:i32) -> Result {
+   fn serialize(&self, io:&mut std::io::Write, ser:&SerializeParam) -> Result {
       let mut r:usize = 0;
-      r += try!(CompactSize::Serialize(self.len() as u64, io, stype));
+      r += try!(CompactSize::Serialize(self.len() as u64, io, ser));
       for v in self {
-         r += try!(v.serialize(io, stype));
+         r += try!(v.serialize(io, ser));
       }
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, stype:i32) -> Result
+   fn unserialize(&mut self, io:&mut std::io::Read, ser:&SerializeParam) -> Result
    {
       let mut r:usize = 0;
       let mut len:u64 = 0;
       {
-         r += try!(CompactSize::Unserialize(&mut len, io, stype));
+         r += try!(CompactSize::Unserialize(&mut len, io, ser));
          self.resize(len as usize, T::default());
       }
       for v in self {
-         r += try!(v.unserialize(io, stype));
+         r += try!(v.unserialize(io, ser));
       }
       Ok(r)
    }
@@ -365,32 +386,32 @@ impl LimitedString {
       r
    }
    #[allow(non_snake_case)]
-   pub fn GetSerializeSize(s:&str, l:u64, stype:i32) -> usize {
+   pub fn GetSerializeSize(s:&str, l:u64, ser:&SerializeParam) -> usize {
       let lim = std::cmp::min(l, std::u32::MAX as u64) as usize;
       let len = std::cmp::min(s.len(), lim);
-      CompactSize::GetSerializeSize(len as u64, stype) + len
+      CompactSize::GetSerializeSize(len as u64, ser) + len
    }
    #[allow(non_snake_case)]
-   pub fn Serialize(s:&str, l:u64, io: &mut std::io::Write, stype:i32) -> Result {
+   pub fn Serialize(s:&str, l:u64, io: &mut std::io::Write, ser:&SerializeParam) -> Result {
       let mut r = 0usize;
       let lim = std::cmp::min(l, std::u32::MAX as u64) as usize;
       let len = std::cmp::min(s.len(), lim);
-      r += try!( CompactSize::new(len as u64).serialize(io, stype) );
-      r += try!( s.as_bytes()[..len].serialize(io, stype) );
+      r += try!( CompactSize::new(len as u64).serialize(io, ser) );
+      r += try!( s.as_bytes()[..len].serialize(io, ser) );
       Ok(r)
    }
 }
 impl Serializable for LimitedString {
-   fn get_serialize_size(&self, stype:i32) -> usize {
-      LimitedString::GetSerializeSize(&*self.string, self.limit as u64, stype)
+   fn get_serialize_size(&self, ser:&SerializeParam) -> usize {
+      LimitedString::GetSerializeSize(&*self.string, self.limit as u64, ser)
    }
-   fn serialize(&self, io: &mut std::io::Write, stype:i32) -> Result {
-      LimitedString::Serialize(&*self.string, self.limit as u64, io, stype)
+   fn serialize(&self, io: &mut std::io::Write, ser:&SerializeParam) -> Result {
+      LimitedString::Serialize(&*self.string, self.limit as u64, io, ser)
    }
-   fn unserialize(&mut self, io: &mut std::io::Read, stype:i32) -> Result {
+   fn unserialize(&mut self, io: &mut std::io::Read, ser:&SerializeParam) -> Result {
       let mut r = 0usize;
       let mut total = CompactSize{value:0};
-      r += try!(total.unserialize(io, stype));
+      r += try!(total.unserialize(io, ser));
 
       let total = total.value as usize;
       let mut buf:Vec<u8> = Vec::new();
@@ -410,14 +431,14 @@ impl Serializable for LimitedString {
 }
 
 impl Serializable for [u8] {
-   fn get_serialize_size(&self, _stype:i32) -> usize {
+   fn get_serialize_size(&self, _ser:&SerializeParam) -> usize {
       self.len()
    }
-   fn serialize(&self, io:&mut std::io::Write, _stype:i32) -> Result {
+   fn serialize(&self, io:&mut std::io::Write, _ser:&SerializeParam) -> Result {
       try!(io.write_all(self));
       Ok(self.len())
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, _stype:i32) -> Result {
+   fn unserialize(&mut self, io:&mut std::io::Read, _ser:&SerializeParam) -> Result {
       try!(io.read_exact(self));
       Ok(self.len())
    }
@@ -426,14 +447,14 @@ impl Serializable for [u8] {
 macro_rules! IMPL_ARRAY {
    ($n:expr) => {
       impl Serializable for [u8;$n] {
-         fn get_serialize_size(&self, _stype:i32) -> usize {
+         fn get_serialize_size(&self, _ser:&SerializeParam) -> usize {
             $n
          }
-         fn serialize(&self, io:&mut std::io::Write, _stype:i32) -> Result {
+         fn serialize(&self, io:&mut std::io::Write, _ser:&SerializeParam) -> Result {
             try!(io.write_all(self));
             Ok(self.len())
          }
-         fn unserialize(&mut self, io:&mut std::io::Read, _stype:i32) -> Result {
+         fn unserialize(&mut self, io:&mut std::io::Read, _ser:&SerializeParam) -> Result {
             try!(io.read_exact(self));
             Ok(self.len())
          }
