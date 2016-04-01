@@ -338,8 +338,43 @@ impl Serializable for CompactSize {
    }
 }
 
-impl <T> Serializable for Vec<T> where T:Clone + Default + Serializable {
+struct VecU8Serializer;
+impl VecU8Serializer {
+   fn get_serialize_size(v:&Vec<u8>, ser:&SerializeParam) -> usize {
+      let mut r:usize = 0;
+      r += CompactSize::GetSerializeSize(v.len() as u64, ser);
+      r += v.len();
+      r
+   }
+   fn serialize(v:&Vec<u8>, io:&mut std::io::Write, ser:&SerializeParam) -> Result {
+      let mut r:usize = 0;
+      r += try!(CompactSize::Serialize(v.len() as u64, io, ser));
+      r += try!(v.as_slice().serialize(io, ser));
+      Ok(r)
+   }
+   fn unserialize(v:&mut Vec<u8>, io:&mut std::io::Read, ser:&SerializeParam) -> Result
+   {
+      let mut r:usize = 0;
+      {
+         let mut len:u64 = 0;
+         r += try!(CompactSize::Unserialize(&mut len, io, ser));
+         v.resize(len as usize, 0);
+      }
+      r += try!(v.as_mut_slice().unserialize(io, ser));
+      Ok(r)
+   }
+}
+
+impl <T> Serializable for Vec<T> where T:std::any::Any + Clone + Default + Serializable {
    fn get_serialize_size(&self, ser:&SerializeParam) -> usize {
+      let any = self as &std::any::Any;
+      match any.downcast_ref::< Vec<u8> >() {
+         Some(vu8) => {
+            return VecU8Serializer::get_serialize_size(vu8, ser)
+         }
+         None => ()
+      }
+
       let mut r:usize = 0;
       r += CompactSize::GetSerializeSize(self.len() as u64, ser);
       for v in self {
@@ -348,6 +383,16 @@ impl <T> Serializable for Vec<T> where T:Clone + Default + Serializable {
       r
    }
    fn serialize(&self, io:&mut std::io::Write, ser:&SerializeParam) -> Result {
+      {
+         let any = self as &std::any::Any;
+         match any.downcast_ref::< Vec<u8> >() {
+            Some(vu8) => {
+               return VecU8Serializer::serialize(vu8, io, ser)
+            }
+            None => ()
+         }
+      }
+
       let mut r:usize = 0;
       r += try!(CompactSize::Serialize(self.len() as u64, io, ser));
       for v in self {
@@ -357,6 +402,16 @@ impl <T> Serializable for Vec<T> where T:Clone + Default + Serializable {
    }
    fn unserialize(&mut self, io:&mut std::io::Read, ser:&SerializeParam) -> Result
    {
+      {
+         let any = self as &mut std::any::Any;
+         match any.downcast_mut::< Vec<u8> >() {
+            Some(vu8) => {
+               return VecU8Serializer::unserialize(vu8, io, ser)
+            }
+            None => ()
+         }
+      }
+
       let mut r:usize = 0;
       let mut len:u64 = 0;
       {
