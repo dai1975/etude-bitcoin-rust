@@ -235,7 +235,7 @@ impl Client {
    }
    fn on_recv_block(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
-      let mut msg = protocol::VerAckMessage::default();
+      let mut msg = protocol::BlockMessage::default();
       r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), &self.serialize_param));
       println!("recv message: {:?}", &msg);
       Ok(r)
