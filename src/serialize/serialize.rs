@@ -265,12 +265,12 @@ pub struct CompactSize {
    pub value:u64,
 }
 impl CompactSize {
-   fn new(v:u64) -> CompactSize {
+   pub fn new(v:u64) -> CompactSize {
       CompactSize { value:v }
    }
    // I beleave that the coding style which explicitely differs static method with instance method is good style.
    #[allow(non_snake_case)]
-   fn GetSerializeSize(v:u64, _ser:&SerializeParam) -> usize {
+   pub fn GetSerializeSize(v:u64, _ser:&SerializeParam) -> usize {
       if v < 253 {
          1
       } else if v <= 0xFFFF {
@@ -283,7 +283,7 @@ impl CompactSize {
    }
 
    #[allow(non_snake_case)]
-   fn Serialize(value:u64, io: &mut std::io::Write, ser:&SerializeParam) -> Result {
+   pub fn Serialize(value:u64, io: &mut std::io::Write, ser:&SerializeParam) -> Result {
       let mut r = 0usize;
       if value < 253 {
          let v = value as u8;
@@ -304,7 +304,7 @@ impl CompactSize {
    }
 
    #[allow(non_snake_case)]
-   fn Unserialize(value:&mut u64, io: &mut std::io::Read, ser:&SerializeParam) -> Result {
+   pub fn Unserialize(value:&mut u64, io: &mut std::io::Read, ser:&SerializeParam) -> Result {
       let mut r = 0usize;
       let mut h:u8 = 0;
       r += try!(h.unserialize(io, ser));
