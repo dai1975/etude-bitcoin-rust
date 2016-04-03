@@ -20,6 +20,9 @@ pub use self::msg_ping::PingMessage;
 pub use self::msg_pong::PongMessage;
 pub use self::msg_alert::AlertMessage;
 pub use self::msg_notfound::NotFoundMessage;
+pub use self::msg_filterload::FilterLoadMessage;
+pub use self::msg_filteradd::FilterAddMessage;
+pub use self::msg_filterclear::FilterClearMessage;
 
 pub mod address;
 pub mod message_header;
@@ -40,3 +43,7 @@ pub mod msg_ping;
 pub mod msg_pong;
 pub mod msg_alert;
 pub mod msg_notfound;
+pub mod msg_filterload;
+pub mod msg_filteradd;
+pub mod msg_filterclear;
+

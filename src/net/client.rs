@@ -284,21 +284,21 @@ impl Client {
    }
    fn on_recv_filterload(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
-      let mut msg = protocol::VerAckMessage::default();
+      let mut msg = protocol::FilterLoadMessage::default();
       r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), &self.serialize_param));
       println!("recv message: {:?}", &msg);
       Ok(r)
    }
    fn on_recv_filteradd(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
-      let mut msg = protocol::VerAckMessage::default();
+      let mut msg = protocol::FilterAddMessage::default();
       r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), &self.serialize_param));
       println!("recv message: {:?}", &msg);
       Ok(r)
    }
    fn on_recv_filterclear(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
-      let mut msg = protocol::VerAckMessage::default();
+      let mut msg = protocol::FilterClearMessage::default();
       r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), &self.serialize_param));
       println!("recv message: {:?}", &msg);
       Ok(r)
