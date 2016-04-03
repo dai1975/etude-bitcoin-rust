@@ -425,6 +425,7 @@ impl <T> Serializable for Vec<T> where T:std::any::Any + Clone + Default + Seria
    }
 }
 
+#[derive(Default,Clone)]
 pub struct LimitedString {
    pub string: String,
    pub limit:  usize,
@@ -455,6 +456,31 @@ impl LimitedString {
       r += try!( s.as_bytes()[..len].serialize(io, ser) );
       Ok(r)
    }
+   #[allow(non_snake_case)]
+   pub fn Unserialize(str:&mut String, lim:u64, io: &mut std::io::Read, ser:&SerializeParam) -> Result {
+      let mut r = 0usize;
+      let mut total = CompactSize{value:0};
+      r += try!(total.unserialize(io, ser));
+
+      let lim   = lim as usize;
+      let total = total.value as usize;
+      let mut buf:Vec<u8> = Vec::new();
+      if lim < total {
+         buf.reserve(lim as usize);
+         try!(io.read_exact(&mut buf));
+         let tmp = &mut vec![0u8; total - lim];
+         try!(io.read_exact(tmp)); //Can I read without buffer?
+      } else {
+         buf.reserve(total);
+         try!(io.read_exact(&mut buf));
+      }
+      r += total;
+      {
+         let s = try!(String::from_utf8(buf));
+         str.push_str(&*s);
+      }
+      Ok(r)
+   }
 }
 impl Serializable for LimitedString {
    fn get_serialize_size(&self, ser:&SerializeParam) -> usize {
@@ -464,24 +490,7 @@ impl Serializable for LimitedString {
       LimitedString::Serialize(&*self.string, self.limit as u64, io, ser)
    }
    fn unserialize(&mut self, io: &mut std::io::Read, ser:&SerializeParam) -> Result {
-      let mut r = 0usize;
-      let mut total = CompactSize{value:0};
-      r += try!(total.unserialize(io, ser));
-
-      let total = total.value as usize;
-      let mut buf:Vec<u8> = Vec::new();
-      if self.limit < total {
-         buf.reserve(self.limit);
-         try!(io.read_exact(&mut buf));
-         let tmp = &mut vec![0u8; total - self.limit];
-         try!(io.read_exact(tmp)); //Can I read without buffer?
-      } else {
-         buf.reserve(total);
-         try!(io.read_exact(&mut buf));
-      }
-      r += total;
-      self.string = try!(String::from_utf8(buf));
-      Ok(r)
+      LimitedString::Unserialize(&mut self.string, self.limit as u64, io, ser)
    }
 }
 

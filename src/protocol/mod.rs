@@ -23,6 +23,7 @@ pub use self::msg_notfound::NotFoundMessage;
 pub use self::msg_filterload::FilterLoadMessage;
 pub use self::msg_filteradd::FilterAddMessage;
 pub use self::msg_filterclear::FilterClearMessage;
+pub use self::msg_reject::RejectMessage;
 
 pub mod address;
 pub mod message_header;
@@ -46,4 +47,5 @@ pub mod msg_notfound;
 pub mod msg_filterload;
 pub mod msg_filteradd;
 pub mod msg_filterclear;
+pub mod msg_reject;
 
