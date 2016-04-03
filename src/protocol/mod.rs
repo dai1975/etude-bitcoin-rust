@@ -18,6 +18,7 @@ pub use self::msg_getaddr::GetAddrMessage;
 pub use self::msg_mempool::MemPoolMessage;
 pub use self::msg_ping::PingMessage;
 pub use self::msg_pong::PongMessage;
+pub use self::msg_alert::AlertMessage;
 
 pub mod address;
 pub mod message_header;
@@ -36,3 +37,4 @@ pub mod msg_getaddr;
 pub mod msg_mempool;
 pub mod msg_ping;
 pub mod msg_pong;
+pub mod msg_alert;
