@@ -1,4 +1,5 @@
-pub const PROTOCOL_VERSION:i32      = 70012;
+pub const PROTOCOL_VERSION:i32 = 70012;
+pub const BIP0031_VERSION:i32  = 60000;
 
 pub use self::address::Address;
 pub use self::message_header::MessageHeader;
@@ -15,6 +16,8 @@ pub use self::msg_headers::HeadersMessage;
 pub use self::msg_block::BlockMessage;
 pub use self::msg_getaddr::GetAddrMessage;
 pub use self::msg_mempool::MemPoolMessage;
+pub use self::msg_ping::PingMessage;
+pub use self::msg_pong::PongMessage;
 
 pub mod address;
 pub mod message_header;
@@ -31,3 +34,5 @@ pub mod msg_headers;
 pub mod msg_block;
 pub mod msg_getaddr;
 pub mod msg_mempool;
+pub mod msg_ping;
+pub mod msg_pong;
