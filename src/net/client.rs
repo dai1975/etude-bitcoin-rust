@@ -312,7 +312,7 @@ impl Client {
    }
    fn on_recv_sendheaders(&mut self) -> Result<usize, serialize::Error> {
       let mut r = 0usize;
-      let mut msg = protocol::VerAckMessage::default();
+      let mut msg = protocol::SendHeadersMessage::default();
       r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), &self.serialize_param));
       println!("recv message: {:?}", &msg);
       Ok(r)

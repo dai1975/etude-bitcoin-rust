@@ -1,5 +1,6 @@
-pub const PROTOCOL_VERSION:i32 = 70012;
-pub const BIP0031_VERSION:i32  = 60000;
+pub const PROTOCOL_VERSION:i32    = 70012;
+pub const BIP0031_VERSION:i32     = 60000;
+pub const SENDHEADERS_VERSION:i32 = 70012;
 
 pub use self::address::Address;
 pub use self::message_header::MessageHeader;
@@ -24,6 +25,7 @@ pub use self::msg_filterload::FilterLoadMessage;
 pub use self::msg_filteradd::FilterAddMessage;
 pub use self::msg_filterclear::FilterClearMessage;
 pub use self::msg_reject::RejectMessage;
+pub use self::msg_sendheaders::SendHeadersMessage;
 
 pub mod address;
 pub mod message_header;
@@ -48,4 +50,4 @@ pub mod msg_filterload;
 pub mod msg_filteradd;
 pub mod msg_filterclear;
 pub mod msg_reject;
-
+pub mod msg_sendheaders;
