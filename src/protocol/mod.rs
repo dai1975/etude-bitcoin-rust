@@ -13,6 +13,7 @@ pub use self::msg_getheaders::GetHeadersMessage;
 pub use self::msg_tx::TxMessage;
 pub use self::msg_headers::HeadersMessage;
 pub use self::msg_block::BlockMessage;
+pub use self::msg_getaddr::GetAddrMessage;
 
 pub mod address;
 pub mod message_header;
@@ -27,3 +28,4 @@ pub mod msg_getheaders;
 pub mod msg_tx;
 pub mod msg_headers;
 pub mod msg_block;
+pub mod msg_getaddr;
