@@ -1,13 +1,19 @@
 use std;
 use ::serialize::{self, Serializable};
 
-#[derive(Debug)]
+#[derive(Debug,Clone,Default)]
 pub struct Address {
    pub services: u64,
    pub time : u32,
    pub port : u16, //host order
    pub ip   : [u8;16], //network order
 }
+impl std::fmt::Display for Address {
+   fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+      write!(f, "ip={:?}, port={}", self.ip, self.port)
+   }
+}
+
 impl Address {
    pub fn new(services_:u64) -> Address {
       Address{ services:services_, time:100000000, port:0, ip:[0u8;16] }
@@ -32,23 +38,23 @@ impl Address {
    }
 }
 impl Serializable for Address {
-   fn get_serialize_size(&self) -> usize {
+   fn get_serialize_size(&self, _ser:&serialize::SerializeParam) -> usize {
       8 + 2 + 16
    }
-   fn serialize(&self, io:&mut std::io::Write) -> serialize::Result {
+   fn serialize(&self, io:&mut std::io::Write, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r = 0usize;
-      r += try!(self.services.serialize(io));
-      r += try!(self.ip.serialize(io));
-      r += try!(self.port.to_le().serialize(io));
+      r += try!(self.services.serialize(io, ser));
+      r += try!(self.ip.serialize(io, ser));
+      r += try!(self.port.to_le().serialize(io, ser));
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read) -> serialize::Result {
+   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r = 0usize;
-      r += try!(self.services.unserialize(io));
-      r += try!(self.ip.unserialize(io));
+      r += try!(self.services.unserialize(io, ser));
+      r += try!(self.ip.unserialize(io, ser));
       {
          let mut p:u16 = 0;
-         r += try!(p.unserialize(io));
+         r += try!(p.unserialize(io, ser));
          self.port = u16::from_le(p);
       }
       Ok(r)
