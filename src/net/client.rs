@@ -3,9 +3,11 @@
 
 use std;
 use std::io::{self,Read,Write};
+extern crate net2;
 use protocol;
 use serialize::{self, Serializable};
 
+#[allow(dead_code)]
 struct ByteBuf<'a>(&'a [u8]);
 impl<'a> std::fmt::LowerHex for ByteBuf<'a> {
     fn fmt(&self, fmtr: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
@@ -22,6 +24,8 @@ pub struct Client {
    recv_mode: i32,
    recv_header: protocol::MessageHeader,
    serialize_param: serialize::SerializeParam,
+   send_buffer: Vec<u8>,
+   send_queue: std::collections::LinkedList< Box<protocol::Message> >,
 }
 
 impl Client {
@@ -34,25 +38,33 @@ impl Client {
          serialize_param: serialize::SerializeParam{
             sertype: serialize::SER_NET,
             version: 0,
-         }
+         },
+         send_buffer: vec![0u8; 1280],
+         send_queue:  std::collections::LinkedList::new(),
       }
    }
    pub fn run(&mut self, addr: String) -> Result<bool,serialize::Error> {
       try!(self.connect(addr));
       println!("connected");
       try!(self.send_version());
-      println!("sent");
       try!(self.ioloop());
       Ok(true)
    }
 
    fn connect(&mut self, addr: String) -> Result< bool, serialize::Error > {
       match self.stream {
-         Some(_) =>
-            try!(Err(io::Error::new(io::ErrorKind::AlreadyExists, "already connected"))),
-         None    =>
-            match std::net::TcpStream::connect(&*addr) {
+         Some(_) => {
+            try!(Err(io::Error::new(io::ErrorKind::AlreadyExists, "already connected")))
+         }
+         None    => {
+            let tcp = net2::TcpBuilder::new_v4().unwrap();
+            // trace とれるように try!() に分解すべき
+            match Ok(&tcp)
+               .and_then(move|ref t| { t.reuse_address(true)})
+               .and_then(move|ref t| { t.connect(&*addr)})
+            {
                Ok(s)  => {
+                  try!(s.set_nonblocking(true));
                   self.stream = Some(s);
                   self.recv_mode = 0;
                   self.recv_buffer.clear();
@@ -60,10 +72,17 @@ impl Client {
                },
                Err(e) => try!(Err(e))
             }
+         }
       }
    }
 
-   fn send(&mut self, obj: &Serializable) -> Result< (), serialize::Error > {
+   fn push(&mut self, obj: Box<protocol::Message>) {
+      self.send_queue.push_back(obj);
+   }
+
+   fn send(&mut self, obj: &protocol::Message) -> Result< (), serialize::Error >
+   {
+      println!("send message: {}", &obj);
       if self.stream.is_none() {
          try!(Err(io::Error::new(io::ErrorKind::NotConnected, "not connected")));
       }
@@ -72,19 +91,21 @@ impl Client {
 
       let hdrsize = hdr.get_serialize_size(&self.serialize_param);
       let objsize = obj.get_serialize_size(&self.serialize_param);
-      let mut buf = vec![0u8; hdrsize + objsize];
+      if self.send_buffer.len() < hdrsize + objsize {
+         self.send_buffer.resize(hdrsize + objsize, 0u8);
+      }
 
-      try!(obj.serialize(&mut &mut buf[hdrsize..], &self.serialize_param));
-      hdr.set_data("version", &buf[hdrsize..]);
-      try!(hdr.serialize(&mut &mut buf[0..], &self.serialize_param));
+      try!(obj.serialize(&mut &mut self.send_buffer[hdrsize..], &self.serialize_param));
+      hdr.set_data(&obj.get_command(), &self.send_buffer[hdrsize..]);
+      try!(hdr.serialize(&mut &mut self.send_buffer[0..], &self.serialize_param));
 
-      println!("sent:");
-      println!("{:x}", ByteBuf(&buf[..]));
+      //println!("sent:");
+      //println!("{:x}", ByteBuf(&buf[..]));
 
       match self.stream.as_ref() {
          None => (),
          Some(ref mut s) => {
-            try!(s.write_all(&buf));
+            try!(s.write_all(&self.send_buffer));
          }
       }
       Ok(())
@@ -93,30 +114,50 @@ impl Client {
    fn send_version(&mut self) -> Result< (), serialize::Error > {
       if self.stream.is_none() { try!(Err(io::Error::new(io::ErrorKind::NotConnected, "not connected"))) }
 
-      let mut msg = protocol::VersionMessage::default();
+      let mut msg = Box::new(protocol::VersionMessage::default());
       {
          let s = self.stream.as_ref().unwrap();
          msg.addr_me.set_services(0).set_ip(&s.local_addr().unwrap());
          msg.addr_you.set_services(0).set_ip(&s.peer_addr().unwrap());
       }
-      self.send(&msg)
+      self.push(msg);
+      Ok(())
    }
 
    fn ioloop(&mut self) -> Result< (), serialize::Error > {
       if self.stream.is_none() { try!(Err(io::Error::new(io::ErrorKind::NotConnected, "not connected"))) }
 
       loop { 
-         println!("buf: {}", &self.recv_buffer);
-         let size = try!(self.stream.as_ref().unwrap().read(self.recv_buffer.as_mut_slice()));
-         if 0 < size {
-            println!("recv: {} {:x}", size, ByteBuf(self.recv_buffer.as_mut_slice()));
-            self.recv_buffer.skip_write(size);
-            println!("recv:  -> {}", &self.recv_buffer);
+         //println!("buf: {}", &self.recv_buffer);
+         { //read
+            match self.stream.as_ref().unwrap().read(self.recv_buffer.as_mut_slice()) {
+               Err(e) => {
+                  match e.kind() {
+                     std::io::ErrorKind::WouldBlock => (),
+                     _ => try!(Err(e))
+                  }
+               }
+               Ok(size) => {
+                  if 0 < size {
+                     //println!("recv: {} {:x}", size, ByteBuf(self.recv_buffer.as_mut_slice()));
+                     self.recv_buffer.skip_write(size);
+                     //println!("recv:  -> {}", &self.recv_buffer);
+
+                     let size = try!(self.on_recv());
+                     if 0 < size {
+                        self.recv_buffer.skip_read(size);
+                        println!("consume: {}; -> {}", size, &self.recv_buffer);
+                     }
+                  }
+               }
+            }
          }
-         let size = try!(self.on_recv());
-         if 0 < size {
-            self.recv_buffer.skip_read(size);
-            println!("consume: {}; -> {}", size, &self.recv_buffer);
+
+         {
+            while !self.send_queue.is_empty() {
+               let b = self.send_queue.pop_front().unwrap();
+               try!(self.send(&*b));
+            }
          }
       }
    }
@@ -126,7 +167,7 @@ impl Client {
          if self.recv_buffer.readable_size() < protocol::MessageHeader::GetSerializableSize() { return Ok(0) };
          let r = try!(self.recv_header.unserialize(&mut self.recv_buffer.as_slice(), &self.serialize_param));
          self.recv_buffer.skip_read(r);
-         println!("recv header: {}", &self.recv_header);
+         //println!("recv header: {}", &self.recv_header);
          self.recv_mode = 1;
       }
       if self.recv_mode == 1 { //recv body
@@ -168,6 +209,7 @@ impl Client {
       let mut msg = protocol::VersionMessage::default();
       r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), &self.serialize_param));
       println!("recv message: {:?}", &msg);
+      self.push(Box::new(protocol::VerAckMessage::default()));
       Ok(r)
    }
    fn on_recv_verack(&mut self) -> Result<usize, serialize::Error> {
@@ -259,6 +301,7 @@ impl Client {
       let mut msg = protocol::PingMessage::default();
       r += try!(msg.unserialize(&mut self.recv_buffer.as_slice(), &self.serialize_param));
       println!("recv message: {:?}", &msg);
+      self.push(Box::new(protocol::PongMessage::new(&msg)));
       Ok(r)
    }
    fn on_recv_pong(&mut self) -> Result<usize, serialize::Error> {
