@@ -7,6 +7,11 @@ pub struct GetHeadersMessage {
    pub locator   : blockchain::BlockLocator,
    pub hash_stop : UInt256,
 }
+impl super::Message for GetHeadersMessage {
+   fn get_command(&self) -> [u8; super::message_header::COMMAND_SIZE] {
+      super::message_header::COMMAND_GETHEADERS
+   }
+}
 impl std::fmt::Display for GetHeadersMessage {
    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
       write!(f, "GetHeaders(locator={}, stop={})", self.locator, self.hash_stop)

@@ -10,6 +10,11 @@ pub struct RejectMessage {
    pub code    : u8,
    pub reason  : String,
 }
+impl super::Message for RejectMessage {
+   fn get_command(&self) -> [u8; super::message_header::COMMAND_SIZE] {
+      super::message_header::COMMAND_REJECT
+   }
+}
 
 impl RejectMessage {
    pub fn get_command_str(&self) -> &str {

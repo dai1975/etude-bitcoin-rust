@@ -6,6 +6,11 @@ use ::blockchain::{BlockHeader};
 pub struct HeadersMessageElement {
    pub header: BlockHeader,
 }
+impl super::Message for HeadersMessage {
+   fn get_command(&self) -> [u8; super::message_header::COMMAND_SIZE] {
+      super::message_header::COMMAND_HEADERS
+   }
+}
 
 
 #[derive(Debug,Default,Clone)]

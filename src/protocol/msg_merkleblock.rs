@@ -6,6 +6,11 @@ use ::blockchain;
 pub struct MerkleBlockMessage {
    pub block : blockchain::MerkleBlock,
 }
+impl super::Message for MerkleBlockMessage {
+   fn get_command(&self) -> [u8; super::message_header::COMMAND_SIZE] {
+      super::message_header::COMMAND_MERKLEBLOCK
+   }
+}
 impl std::fmt::Display for MerkleBlockMessage {
    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
       write!(f, "MerkleBlock(block={})", self.block)

@@ -6,6 +6,12 @@ use ::blockchain::{Transaction};
 pub struct TxMessage {
    pub tx: Transaction,
 }
+impl super::Message for TxMessage {
+   fn get_command(&self) -> [u8; super::message_header::COMMAND_SIZE] {
+      super::message_header::COMMAND_TX
+   }
+}
+
 impl std::fmt::Display for TxMessage {
    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
       write!(f, "Tx({})", self.tx)

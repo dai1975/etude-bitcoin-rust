@@ -4,6 +4,12 @@ use ::serialize::{self, Serializable};
 #[derive(Debug,Default,Clone)]
 pub struct FilterClearMessage;
 
+impl super::Message for FilterClearMessage {
+   fn get_command(&self) -> [u8; super::message_header::COMMAND_SIZE] {
+      super::message_header::COMMAND_FILTERCLEAR
+   }
+}
+
 impl std::fmt::Display for FilterClearMessage {
    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
       write!(f, "FilterClear()")

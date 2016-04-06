@@ -4,6 +4,7 @@ pub const SENDHEADERS_VERSION:i32 = 70012;
 
 pub use self::address::Address;
 pub use self::message_header::MessageHeader;
+pub use self::message::Message;
 pub use self::msg_version::VersionMessage;
 pub use self::msg_verack::VerAckMessage;
 pub use self::msg_addr::AddrMessage;
@@ -29,6 +30,7 @@ pub use self::msg_sendheaders::SendHeadersMessage;
 
 pub mod address;
 pub mod message_header;
+pub mod message;
 pub mod msg_version;
 pub mod msg_verack;
 pub mod msg_addr;

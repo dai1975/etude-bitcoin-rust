@@ -1,13 +1,24 @@
 use std;
 use ::serialize::{self, Serializable};
+use super::PingMessage;
 use super::BIP0031_VERSION;
 
 #[derive(Debug,Default,Clone)]
 pub struct PongMessage
 {
-   nonce: u64,
+   pub nonce: u64,
+}
+impl PongMessage {
+   pub fn new(ping:&PingMessage) -> PongMessage {
+      PongMessage{ nonce: ping.nonce }
+   }
 }
 
+impl super::Message for PongMessage {
+   fn get_command(&self) -> [u8; super::message_header::COMMAND_SIZE] {
+      super::message_header::COMMAND_PONG
+   }
+}
 impl std::fmt::Display for PongMessage {
    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
       write!(f, "Pong(nonce={})", self.nonce)

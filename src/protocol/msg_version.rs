@@ -28,6 +28,12 @@ impl Default for VersionMessage {
       }
    }
 }
+impl super::Message for VersionMessage {
+   fn get_command(&self) -> [u8; super::message_header::COMMAND_SIZE] {
+      super::message_header::COMMAND_VERSION
+   }
+}
+
 impl std::fmt::Display for VersionMessage {
    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
       write!(f, "Version(ver={}, services={}, time={}, me={}, you={}, nonce={}, subv={})", self.version, self.services, self.time, self.addr_me, self.addr_you, self.nonce, self.subversion)

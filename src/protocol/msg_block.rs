@@ -6,6 +6,11 @@ use ::blockchain::{Block};
 pub struct BlockMessage {
    pub block: Block,
 }
+impl super::Message for BlockMessage {
+   fn get_command(&self) -> [u8; super::message_header::COMMAND_SIZE] {
+      super::message_header::COMMAND_BLOCK
+   }
+}
 
 impl std::fmt::Display for BlockMessage {
    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {

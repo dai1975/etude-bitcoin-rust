@@ -4,6 +4,12 @@ use ::serialize::{self, Serializable};
 #[derive(Debug,Default,Clone)]
 pub struct SendHeadersMessage;
 
+impl super::Message for SendHeadersMessage {
+   fn get_command(&self) -> [u8; super::message_header::COMMAND_SIZE] {
+      super::message_header::COMMAND_SENDHEADERS
+   }
+}
+
 impl std::fmt::Display for SendHeadersMessage {
    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
       write!(f, "SendHeaders()")

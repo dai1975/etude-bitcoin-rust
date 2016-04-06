@@ -6,6 +6,11 @@ pub struct AlertMessage {
    pub msg: Vec<u8>,
    pub sig: Vec<u8>,
 }
+impl super::Message for AlertMessage {
+   fn get_command(&self) -> [u8; super::message_header::COMMAND_SIZE] {
+      super::message_header::COMMAND_ALERT
+   }
+}
 
 impl std::fmt::Display for AlertMessage {
    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {

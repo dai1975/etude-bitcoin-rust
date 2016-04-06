@@ -6,13 +6,18 @@ use super::BIP0031_VERSION;
 #[derive(Debug,Default,Clone)]
 pub struct PingMessage
 {
-   nonce: u64,
+   pub nonce: u64,
 }
 impl PingMessage {
    pub fn reset_nonce(&mut self) {
       use self::rand::Rng;
       let mut rng = rand::os::OsRng::new().unwrap(); // This rng is cryptographic level, is it too secure?
       self.nonce = rng.next_u64();
+   }
+}
+impl super::Message for PingMessage {
+   fn get_command(&self) -> [u8; super::message_header::COMMAND_SIZE] {
+      super::message_header::COMMAND_PING
    }
 }
 

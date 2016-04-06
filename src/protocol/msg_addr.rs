@@ -7,6 +7,12 @@ use ::serialize::{self, Serializable};
 pub struct AddrMessage {
    pub addrs : Vec<Address>,
 }
+impl super::Message for AddrMessage {
+   fn get_command(&self) -> [u8; super::message_header::COMMAND_SIZE] {
+      super::message_header::COMMAND_ADDR
+   }
+}
+
 impl std::fmt::Display for AddrMessage {
    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
       write!(f, "Addr(len={})", self.addrs.len())

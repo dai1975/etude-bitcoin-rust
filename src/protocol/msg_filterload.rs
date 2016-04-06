@@ -8,6 +8,12 @@ pub struct FilterLoadMessage {
    pub tweak: u32,
    pub flags: u8,
 }
+impl super::Message for FilterLoadMessage {
+   fn get_command(&self) -> [u8; super::message_header::COMMAND_SIZE] {
+      super::message_header::COMMAND_FILTERLOAD
+   }
+}
+
 impl std::fmt::Display for FilterLoadMessage {
    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
       write!(f, "FilterLoad(data={:?},funcs={},tweak={},flags={})", self.data, self.hash_funcs, self.tweak, self.flags)

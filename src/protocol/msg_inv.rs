@@ -13,6 +13,11 @@ impl Default for MessageBlockType {
       MessageBlockType::Tx
    }
 }
+impl super::Message for InvMessage {
+   fn get_command(&self) -> [u8; super::message_header::COMMAND_SIZE] {
+      super::message_header::COMMAND_INV
+   }
+}
 
 impl Serializable for MessageBlockType {
    fn get_serialize_size(&self, _ser:&serialize::SerializeParam) -> usize {

@@ -9,6 +9,11 @@ impl std::fmt::Display for MemPoolMessage {
       write!(f, "MemPool()")
    }
 }
+impl super::Message for MemPoolMessage {
+   fn get_command(&self) -> [u8; super::message_header::COMMAND_SIZE] {
+      super::message_header::COMMAND_MEMPOOL
+   }
+}
 
 impl Serializable for MemPoolMessage {
    fn get_serialize_size(&self, _ser:&serialize::SerializeParam) -> usize {

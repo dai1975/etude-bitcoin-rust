@@ -5,6 +5,12 @@ use ::serialize::{self, Serializable};
 pub struct FilterAddMessage {
    pub data: Vec<u8>,
 }
+impl super::Message for FilterAddMessage {
+   fn get_command(&self) -> [u8; super::message_header::COMMAND_SIZE] {
+      super::message_header::COMMAND_FILTERADD
+   }
+}
+
 impl std::fmt::Display for FilterAddMessage {
    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
       write!(f, "FilterAdd(data={:?})", self.data)

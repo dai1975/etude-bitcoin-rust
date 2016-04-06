@@ -63,13 +63,13 @@ impl MessageHeader {
       MESSAGE_START_SIZE + COMMAND_SIZE + 4 + 4
    }
 
-   pub fn set_data(&mut self, command_:&str, data:&[u8]) -> &mut MessageHeader {
+   pub fn set_data(&mut self, command_:&[u8], data:&[u8]) -> &mut MessageHeader {
       self.start.clone_from_slice(&START_TESTNET);
       if COMMAND_SIZE <= command_.len() {
-         self.command.clone_from_slice(&command_.as_bytes()[..COMMAND_SIZE]);
+         self.command.clone_from_slice(&command_[..COMMAND_SIZE]);
       } else {
          self.command.clone_from_slice(&[0u8; COMMAND_SIZE]);
-         self.command[..command_.len()].clone_from_slice(command_.as_bytes());
+         self.command[..command_.len()].clone_from_slice(command_);
       }
       self.size = data.len() as u32;
 

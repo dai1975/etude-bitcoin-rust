@@ -4,6 +4,12 @@ use ::serialize::{self, Serializable};
 #[derive(Debug,Default)]
 pub struct VerAckMessage;
 
+impl super::Message for VerAckMessage {
+   fn get_command(&self) -> [u8; super::message_header::COMMAND_SIZE] {
+      super::message_header::COMMAND_VERACK
+   }
+}
+
 impl std::fmt::Display for VerAckMessage {
    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
       write!(f, "VerAck()")
