@@ -1,6 +1,10 @@
 pub const PROTOCOL_VERSION:i32    = 70012;
-pub const BIP0031_VERSION:i32     = 60000;
 pub const SENDHEADERS_VERSION:i32 = 70012;
+pub const BIP0031_VERSION:i32     = 60000;
+pub const GETHEADERS_VERSION:i32  = 31800;
+
+pub const INIT_PROTO_VERSION:i32  = 209;
+pub const MIN_PEER_PROTO_VERSION:i32 = GETHEADERS_VERSION;
 
 pub use self::address::Address;
 pub use self::message_header::MessageHeader;

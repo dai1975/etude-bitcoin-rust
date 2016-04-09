@@ -4,6 +4,16 @@ use super::message_header::COMMAND_SIZE;
 
 pub const MAX_REJECT_MESSAGE_LENGTH:usize = 111;
 
+pub const REJECT_MALFORMED:u8       = 0x01;
+pub const REJECT_INVALID:u8         = 0x10;
+pub const REJECT_OBSOLETE:u8        = 0x11;
+pub const REJECT_DUPLICATE:u8       = 0x12;
+pub const REJECT_NONSTANDARD:u8     = 0x40;
+pub const REJECT_DUST:u8            = 0x41;
+pub const REJECT_INSUFFICIENTFEE:u8 = 0x42;
+pub const REJECT_CHECKPOINT:u8      = 0x43;
+
+
 #[derive(Debug,Default,Clone)]
 pub struct RejectMessage {
    pub command : [u8; COMMAND_SIZE],
@@ -17,6 +27,13 @@ impl super::Message for RejectMessage {
 }
 
 impl RejectMessage {
+   pub fn new(msg_: &super::Message, code_:u8, reason_:&String) -> RejectMessage {
+      RejectMessage {
+         command: msg_.get_command(),
+         code: code_,
+         reason: reason_.clone(),
+      }
+   }
    pub fn get_command_str(&self) -> &str {
       let s =
          match self.command.iter().position(|&x| x == 0) {
