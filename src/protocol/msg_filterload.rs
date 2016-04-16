@@ -35,12 +35,12 @@ impl Serializable for FilterLoadMessage {
       r += try!(self.flags.serialize(io,ser));
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
+   fn deserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r:usize = 0;
-      r += try!(self.data.unserialize(io,ser));
-      r += try!(self.hash_funcs.unserialize(io,ser));
-      r += try!(self.tweak.unserialize(io,ser));
-      r += try!(self.flags.unserialize(io,ser));
+      r += try!(self.data.deserialize(io,ser));
+      r += try!(self.hash_funcs.deserialize(io,ser));
+      r += try!(self.tweak.deserialize(io,ser));
+      r += try!(self.flags.deserialize(io,ser));
       Ok(r)
    }
 }

@@ -42,9 +42,9 @@ impl Serializable for PingMessage {
          Ok(0usize)
       }
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
+   fn deserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
       if BIP0031_VERSION < ser.version {
-         self.nonce.unserialize(io, ser)
+         self.nonce.deserialize(io, ser)
       } else {
          Ok(0usize)
       }

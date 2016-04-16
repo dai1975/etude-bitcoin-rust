@@ -32,14 +32,14 @@ impl Serializable for BlockHeader {
       r += try!(self.nonce.serialize(io, ser));
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
+   fn deserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r:usize = 0;
-      r += try!(self.version.unserialize(io, ser));
-      r += try!(self.hash_prev_block.unserialize(io, ser));
-      r += try!(self.hash_merkle_root.unserialize(io, ser));
-      r += try!(self.time.unserialize(io, ser));
-      r += try!(self.bits.unserialize(io, ser));
-      r += try!(self.nonce.unserialize(io, ser));
+      r += try!(self.version.deserialize(io, ser));
+      r += try!(self.hash_prev_block.deserialize(io, ser));
+      r += try!(self.hash_merkle_root.deserialize(io, ser));
+      r += try!(self.time.deserialize(io, ser));
+      r += try!(self.bits.deserialize(io, ser));
+      r += try!(self.nonce.deserialize(io, ser));
       Ok(r)
    }
 }

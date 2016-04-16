@@ -25,10 +25,10 @@ impl Serializable for Block {
       r += try!(self.transactions.serialize(io, ser));
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
+   fn deserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r:usize = 0;
-      r += try!(self.header.unserialize(io, ser));
-      r += try!(self.transactions.unserialize(io, ser));
+      r += try!(self.header.deserialize(io, ser));
+      r += try!(self.transactions.deserialize(io, ser));
       Ok(r)
    }
 }

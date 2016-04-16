@@ -28,13 +28,13 @@ impl Serializable for BlockLocator {
       r += try!(self.haves.serialize(io, ser));
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
+   fn deserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r:usize = 0;
       if ser.sertype & serialize::SER_GETHASH != 0 {
          let mut version:i32 = 0;
-         r += try!(version.unserialize(io, ser));
+         r += try!(version.deserialize(io, ser));
       }
-      r += try!(self.haves.unserialize(io, ser));
+      r += try!(self.haves.deserialize(io, ser));
       Ok(r)
    }
 }

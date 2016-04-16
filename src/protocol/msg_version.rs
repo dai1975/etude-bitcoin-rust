@@ -18,7 +18,7 @@ pub struct VersionMessage {
 impl Default for VersionMessage {
    fn default() -> VersionMessage {
       VersionMessage {
-         version : ::protocol::PROTOCOL_VERSION,
+         version : 0,
          services : 0,
          time : time::get_time().sec,
          addr_me : Address::new(0),
@@ -61,17 +61,17 @@ impl Serializable for VersionMessage {
       r += try!(LimitedString::new(&*self.subversion, MAX_SUBVERSION_LENGTH).serialize(io, ser));
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
+   fn deserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r = 0usize;
-      r += try!(self.version.unserialize(io, ser));
-      r += try!(self.services.unserialize(io, ser));
-      r += try!(self.time.unserialize(io, ser));
-      r += try!(self.addr_me.unserialize(io, ser));
-      r += try!(self.addr_you.unserialize(io, ser));
-      r += try!(self.nonce.unserialize(io, ser));
+      r += try!(self.version.deserialize(io, ser));
+      r += try!(self.services.deserialize(io, ser));
+      r += try!(self.time.deserialize(io, ser));
+      r += try!(self.addr_me.deserialize(io, ser));
+      r += try!(self.addr_you.deserialize(io, ser));
+      r += try!(self.nonce.deserialize(io, ser));
       {
          let mut ls = LimitedString::new("", MAX_SUBVERSION_LENGTH);
-         r += try!(ls.unserialize(io, ser));
+         r += try!(ls.deserialize(io, ser));
          self.subversion = ls.string;
       }
       Ok(r)

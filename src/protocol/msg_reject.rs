@@ -64,11 +64,11 @@ impl Serializable for RejectMessage {
       r += try!(LimitedString::Serialize(&self.reason, MAX_REJECT_MESSAGE_LENGTH as u64, io, ser));
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
+   fn deserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r = 0usize;
       {
          let mut s:LimitedString = LimitedString::default();
-         r += try!(s.unserialize(io, ser));
+         r += try!(s.deserialize(io, ser));
          let bytes = s.string.into_bytes();
          if COMMAND_SIZE <= bytes.len() {
             self.command.clone_from_slice(&bytes[..COMMAND_SIZE]);
@@ -77,8 +77,8 @@ impl Serializable for RejectMessage {
             self.command[..bytes.len()].clone_from_slice(&bytes[..]);
          }
       }
-      r += try!(self.code.unserialize(io, ser));
-      r += try!(LimitedString::Unserialize(&mut self.reason, MAX_REJECT_MESSAGE_LENGTH as u64, io, ser));
+      r += try!(self.code.deserialize(io, ser));
+      r += try!(LimitedString::Deserialize(&mut self.reason, MAX_REJECT_MESSAGE_LENGTH as u64, io, ser));
       Ok(r)
    }
 }

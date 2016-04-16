@@ -24,8 +24,8 @@ impl Serializable for MerkleBlockMessage {
    fn serialize(&self, io:&mut std::io::Write, ser:&serialize::SerializeParam) -> serialize::Result {
       self.block.serialize(io, ser)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
-      self.block.unserialize(io, ser)
+   fn deserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
+      self.block.deserialize(io, ser)
    }
 }
 

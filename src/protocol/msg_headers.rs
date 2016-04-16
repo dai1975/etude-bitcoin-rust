@@ -41,12 +41,12 @@ impl Serializable for HeadersMessageElement {
       r += try!(CompactSize::Serialize(0u64, io, ser));
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
+   fn deserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r:usize = 0;
-      r += try!(self.header.unserialize(io, ser));
+      r += try!(self.header.deserialize(io, ser));
       {
          let mut txlen:u64 = 0;
-         r += try!(CompactSize::Unserialize(&mut txlen, io, ser));
+         r += try!(CompactSize::Deserialize(&mut txlen, io, ser));
       }
       Ok(r)
    }
@@ -59,8 +59,8 @@ impl Serializable for HeadersMessage {
    fn serialize(&self, io:&mut std::io::Write, ser:&serialize::SerializeParam) -> serialize::Result {
       self.headers.serialize(io, ser)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
-      self.headers.unserialize(io, ser)
+   fn deserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
+      self.headers.deserialize(io, ser)
    }
 }
 

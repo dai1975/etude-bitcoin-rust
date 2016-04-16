@@ -48,13 +48,13 @@ impl Serializable for Address {
       r += try!(self.port.to_le().serialize(io, ser));
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
+   fn deserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r = 0usize;
-      r += try!(self.services.unserialize(io, ser));
-      r += try!(self.ip.unserialize(io, ser));
+      r += try!(self.services.deserialize(io, ser));
+      r += try!(self.ip.deserialize(io, ser));
       {
          let mut p:u16 = 0;
-         r += try!(p.unserialize(io, ser));
+         r += try!(p.deserialize(io, ser));
          self.port = u16::from_le(p);
       }
       Ok(r)

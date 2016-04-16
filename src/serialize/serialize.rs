@@ -72,7 +72,7 @@ impl SerializeParam {
 pub trait Serializable {
    fn get_serialize_size(&self, ser:&SerializeParam) -> usize;
    fn serialize(&self, io:&mut std::io::Write, ser:&SerializeParam) -> Result;
-   fn unserialize(&mut self, io:&mut std::io::Read, ser:&SerializeParam) -> Result;
+   fn deserialize(&mut self, io:&mut std::io::Read, ser:&SerializeParam) -> Result;
 }
 
 #[macro_use]
@@ -93,10 +93,10 @@ macro_rules! ADD_SERIALIZE_METHODS {
          )*
          Ok(r)
       }
-      fn unserialize(&mut self, io:&mut std::io::Read, ser:&::serialize::SerializeParam) -> ::serialize::Result {
+      fn deserialize(&mut self, io:&mut std::io::Read, ser:&::serialize::SerializeParam) -> ::serialize::Result {
          let mut r = 0usize;
          $(
-            r += try!( self.$x.unserialize(io, ser) );
+            r += try!( self.$x.deserialize(io, ser) );
          )*
          Ok(r)
       }
@@ -112,7 +112,7 @@ impl Serializable for u8 {
       try!(io.write_all(&buf));
       Ok(buf.len())
    }
-   fn unserialize(&mut self, io: &mut std::io::Read, _ser:&SerializeParam) -> Result {
+   fn deserialize(&mut self, io: &mut std::io::Read, _ser:&SerializeParam) -> Result {
       let mut buf: [u8; 1] = [0];
       try!(io.read_exact(&mut buf));
       *self = buf[0];
@@ -130,7 +130,7 @@ impl Serializable for u32 {
       try!(io.write_all(buf));
       Ok(buf.len())
    }
-   fn unserialize(&mut self, io: &mut std::io::Read, _ser:&SerializeParam) -> Result {
+   fn deserialize(&mut self, io: &mut std::io::Read, _ser:&SerializeParam) -> Result {
       let mut tmp:u32 = 0;
       let buf: &mut [u8;4] = unsafe { std::mem::transmute(&mut tmp) };
       try!(io.read_exact(buf));
@@ -149,7 +149,7 @@ impl Serializable for i32 {
       try!(io.write_all(buf));
       Ok(buf.len())
    }
-   fn unserialize(&mut self, io: &mut std::io::Read, _ser:&SerializeParam) -> Result {
+   fn deserialize(&mut self, io: &mut std::io::Read, _ser:&SerializeParam) -> Result {
       let mut tmp:i32 = 0;
       let buf: &mut [u8;4] = unsafe { std::mem::transmute(&mut tmp) };
       try!(io.read_exact(buf));
@@ -168,7 +168,7 @@ impl Serializable for u16 {
       try!(io.write_all(buf));
       Ok(buf.len())
    }
-   fn unserialize(&mut self, io: &mut std::io::Read, _ser:&SerializeParam) -> Result {
+   fn deserialize(&mut self, io: &mut std::io::Read, _ser:&SerializeParam) -> Result {
       let mut tmp:u16 = 0;
       let buf: &mut [u8;2] = unsafe { std::mem::transmute(&mut tmp) };
       try!(io.read_exact(buf));
@@ -187,7 +187,7 @@ impl Serializable for u64 {
       try!(io.write_all(buf));
       Ok(buf.len())
    }
-   fn unserialize(&mut self, io: &mut std::io::Read, _ser:&SerializeParam) -> Result {
+   fn deserialize(&mut self, io: &mut std::io::Read, _ser:&SerializeParam) -> Result {
       let mut tmp:u64 = 0;
       let buf: &mut [u8;8] = unsafe { std::mem::transmute(&mut tmp) };
       try!(io.read_exact(buf));
@@ -205,7 +205,7 @@ impl Serializable for i64 {
       try!(io.write_all(buf));
       Ok(buf.len())
    }
-   fn unserialize(&mut self, io: &mut std::io::Read, _ser:&SerializeParam) -> Result {
+   fn deserialize(&mut self, io: &mut std::io::Read, _ser:&SerializeParam) -> Result {
       let mut tmp:i64 = 0;
       let buf: &mut [u8;8] = unsafe { std::mem::transmute(&mut tmp) };
       try!(io.read_exact(buf));
@@ -255,7 +255,7 @@ impl Serializable for UInt256 {
       try!(io.write_all(&self.data));
       Ok(32)
    }
-   fn unserialize(&mut self, io: &mut std::io::Read, _ser:&SerializeParam) -> Result {
+   fn deserialize(&mut self, io: &mut std::io::Read, _ser:&SerializeParam) -> Result {
       try!(io.read_exact(&mut self.data));
       Ok(32)
    }
@@ -304,23 +304,23 @@ impl CompactSize {
    }
 
    #[allow(non_snake_case)]
-   pub fn Unserialize(value:&mut u64, io: &mut std::io::Read, ser:&SerializeParam) -> Result {
+   pub fn Deserialize(value:&mut u64, io: &mut std::io::Read, ser:&SerializeParam) -> Result {
       let mut r = 0usize;
       let mut h:u8 = 0;
-      r += try!(h.unserialize(io, ser));
+      r += try!(h.deserialize(io, ser));
       if h < 253 {
          *value = h as u64;
       } else if h == 253 {
          let mut v:u16 = 0;
-         r += try!(v.unserialize(io, ser));
+         r += try!(v.deserialize(io, ser));
          *value = v as u64;
       } else if h == 254 {
          let mut v:u32 = 0;
-         r += try!(v.unserialize(io, ser));
+         r += try!(v.deserialize(io, ser));
          *value = v as u64;
       } else if h == 255 {
          let mut v:u64 = 0;
-         r += try!(v.unserialize(io, ser));
+         r += try!(v.deserialize(io, ser));
          *value = v;
       }
       Ok(r)
@@ -333,8 +333,8 @@ impl Serializable for CompactSize {
    fn serialize(&self, io: &mut std::io::Write, ser:&SerializeParam) -> Result {
       CompactSize::Serialize(self.value, io, ser)
    }
-   fn unserialize(&mut self, io: &mut std::io::Read, ser:&SerializeParam) -> Result {
-      CompactSize::Unserialize(&mut self.value, io, ser)
+   fn deserialize(&mut self, io: &mut std::io::Read, ser:&SerializeParam) -> Result {
+      CompactSize::Deserialize(&mut self.value, io, ser)
    }
 }
 
@@ -352,15 +352,15 @@ impl VecU8Serializer {
       r += try!(v.as_slice().serialize(io, ser));
       Ok(r)
    }
-   fn unserialize(v:&mut Vec<u8>, io:&mut std::io::Read, ser:&SerializeParam) -> Result
+   fn deserialize(v:&mut Vec<u8>, io:&mut std::io::Read, ser:&SerializeParam) -> Result
    {
       let mut r:usize = 0;
       {
          let mut len:u64 = 0;
-         r += try!(CompactSize::Unserialize(&mut len, io, ser));
+         r += try!(CompactSize::Deserialize(&mut len, io, ser));
          v.resize(len as usize, 0);
       }
-      r += try!(v.as_mut_slice().unserialize(io, ser));
+      r += try!(v.as_mut_slice().deserialize(io, ser));
       Ok(r)
    }
 }
@@ -400,13 +400,13 @@ impl <T> Serializable for Vec<T> where T:std::any::Any + Clone + Default + Seria
       }
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, ser:&SerializeParam) -> Result
+   fn deserialize(&mut self, io:&mut std::io::Read, ser:&SerializeParam) -> Result
    {
       {
          let any = self as &mut std::any::Any;
          match any.downcast_mut::< Vec<u8> >() {
             Some(vu8) => {
-               return VecU8Serializer::unserialize(vu8, io, ser)
+               return VecU8Serializer::deserialize(vu8, io, ser)
             }
             None => ()
          }
@@ -415,11 +415,11 @@ impl <T> Serializable for Vec<T> where T:std::any::Any + Clone + Default + Seria
       let mut r:usize = 0;
       let mut len:u64 = 0;
       {
-         r += try!(CompactSize::Unserialize(&mut len, io, ser));
+         r += try!(CompactSize::Deserialize(&mut len, io, ser));
          self.resize(len as usize, T::default());
       }
       for v in self {
-         r += try!(v.unserialize(io, ser));
+         r += try!(v.deserialize(io, ser));
       }
       Ok(r)
    }
@@ -457,10 +457,10 @@ impl LimitedString {
       Ok(r)
    }
    #[allow(non_snake_case)]
-   pub fn Unserialize(str:&mut String, lim:u64, io: &mut std::io::Read, ser:&SerializeParam) -> Result {
+   pub fn Deserialize(str:&mut String, lim:u64, io: &mut std::io::Read, ser:&SerializeParam) -> Result {
       let mut r = 0usize;
       let mut total = CompactSize{value:0};
-      r += try!(total.unserialize(io, ser));
+      r += try!(total.deserialize(io, ser));
 
       let lim   = lim as usize;
       let total = total.value as usize;
@@ -489,8 +489,8 @@ impl Serializable for LimitedString {
    fn serialize(&self, io: &mut std::io::Write, ser:&SerializeParam) -> Result {
       LimitedString::Serialize(&*self.string, self.limit as u64, io, ser)
    }
-   fn unserialize(&mut self, io: &mut std::io::Read, ser:&SerializeParam) -> Result {
-      LimitedString::Unserialize(&mut self.string, self.limit as u64, io, ser)
+   fn deserialize(&mut self, io: &mut std::io::Read, ser:&SerializeParam) -> Result {
+      LimitedString::Deserialize(&mut self.string, self.limit as u64, io, ser)
    }
 }
 
@@ -502,7 +502,7 @@ impl Serializable for [u8] {
       try!(io.write_all(self));
       Ok(self.len())
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, _ser:&SerializeParam) -> Result {
+   fn deserialize(&mut self, io:&mut std::io::Read, _ser:&SerializeParam) -> Result {
       try!(io.read_exact(self));
       Ok(self.len())
    }
@@ -518,7 +518,7 @@ macro_rules! IMPL_ARRAY {
             try!(io.write_all(self));
             Ok(self.len())
          }
-         fn unserialize(&mut self, io:&mut std::io::Read, _ser:&SerializeParam) -> Result {
+         fn deserialize(&mut self, io:&mut std::io::Read, _ser:&SerializeParam) -> Result {
             try!(io.read_exact(self));
             Ok(self.len())
          }

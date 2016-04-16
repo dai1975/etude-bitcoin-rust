@@ -39,19 +39,19 @@ impl Serializable for PartialMerkleTree {
       r += try!(self.hashes.serialize(io, ser));
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
+   fn deserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r:usize = 0;
-      r += try!(self.n_transactions.unserialize(io, ser));
+      r += try!(self.n_transactions.deserialize(io, ser));
       {
          let mut bytes:Vec<u8> = Vec::new();
-         r += try!(bytes.unserialize(io, ser));
+         r += try!(bytes.deserialize(io, ser));
 
          for byte in &mut bytes {
             *byte = reverse_u8(*byte);
          }
          self.bits = bit_vec::BitVec::from_bytes(bytes.as_slice());
       }         
-      r += try!(self.hashes.unserialize(io, ser));
+      r += try!(self.hashes.deserialize(io, ser));
       Ok(r)
    }
 }

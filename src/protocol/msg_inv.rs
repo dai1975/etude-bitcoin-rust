@@ -31,10 +31,10 @@ impl Serializable for MessageBlockType {
       };
       tmp.serialize(io, ser)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
+   fn deserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r:usize = 0;
       let mut tmp:u32 = 0;
-      r += try!(tmp.unserialize(io, ser));
+      r += try!(tmp.deserialize(io, ser));
       match tmp {
          1 => *self = MessageBlockType::Tx,
          2 => *self = MessageBlockType::Block,
@@ -69,10 +69,10 @@ impl Serializable for Inv {
       r += try!(self.hash.serialize(io, ser));
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
+   fn deserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r = 0usize;
-      r += try!(self.blocktype.unserialize(io, ser));
-      r += try!(self.hash.unserialize(io, ser));
+      r += try!(self.blocktype.deserialize(io, ser));
+      r += try!(self.hash.deserialize(io, ser));
       Ok(r)
    }
 }
@@ -94,8 +94,8 @@ impl Serializable for InvMessage {
    fn serialize(&self, io:&mut std::io::Write, ser:&serialize::SerializeParam) -> serialize::Result {
       self.invs.serialize(io, ser)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
-      self.invs.unserialize(io, ser)
+   fn deserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
+      self.invs.deserialize(io, ser)
    }
 }
 
@@ -133,7 +133,7 @@ fn test_serialize_inv() {
 }
 
 #[test]
-fn test_unserialize_inv() {
+fn test_deserialize_inv() {
    let exp = [
       3u8,
       1,0,0,0, 128,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -143,7 +143,7 @@ fn test_unserialize_inv() {
 
    let mut h = InvMessage::default();
    let ser = serialize::SerializeParam::new_net();
-   h.unserialize(&mut &exp[..], &ser).unwrap();
+   h.deserialize(&mut &exp[..], &ser).unwrap();
    assert_eq!(3, h.invs.len());
    {
       let inv = &h.invs[0];

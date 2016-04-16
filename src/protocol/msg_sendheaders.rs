@@ -23,7 +23,7 @@ impl Serializable for SendHeadersMessage {
    fn serialize(&self, _io:&mut std::io::Write, _ser:&serialize::SerializeParam) -> serialize::Result {
       Ok(0usize)
    }
-   fn unserialize(&mut self, _io:&mut std::io::Read, _ser:&serialize::SerializeParam) -> serialize::Result {
+   fn deserialize(&mut self, _io:&mut std::io::Read, _ser:&serialize::SerializeParam) -> serialize::Result {
       Ok(0usize)
    }
 }

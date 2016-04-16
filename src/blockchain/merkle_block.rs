@@ -24,10 +24,10 @@ impl Serializable for MerkleBlock {
       r += try!(self.txn.serialize(io, ser));
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
+   fn deserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r:usize = 0;
-      r += try!(self.header.unserialize(io, ser));
-      r += try!(self.txn.unserialize(io, ser));
+      r += try!(self.header.deserialize(io, ser));
+      r += try!(self.txn.deserialize(io, ser));
       Ok(r)
    }
 }

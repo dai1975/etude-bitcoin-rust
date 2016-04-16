@@ -29,10 +29,10 @@ impl Serializable for GetBlocksMessage {
       r += try!(self.hash_stop.serialize(io, ser));
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
+   fn deserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r:usize = 0;
-      r += try!(self.locator.unserialize(io, ser));
-      r += try!(self.hash_stop.unserialize(io, ser));
+      r += try!(self.locator.deserialize(io, ser));
+      r += try!(self.hash_stop.deserialize(io, ser));
       Ok(r)
    }
 }

@@ -63,10 +63,10 @@ impl Serializable for OutPoint {
       r += try!(self.n.serialize(io, ser));
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
+   fn deserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r:usize = 0;
-      r += try!(self.hash.unserialize(io, ser));
-      r += try!(self.n.unserialize(io, ser));
+      r += try!(self.hash.deserialize(io, ser));
+      r += try!(self.n.deserialize(io, ser));
       Ok(r)
    }
 }
@@ -84,11 +84,11 @@ impl Serializable for TxIn {
       r += try!(self.sequence.serialize(io, ser));
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
+   fn deserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r:usize = 0;
-      r += try!(self.prevout.unserialize(io, ser));
-      r += try!(self.script_sig.unserialize(io, ser));
-      r += try!(self.sequence.unserialize(io, ser));
+      r += try!(self.prevout.deserialize(io, ser));
+      r += try!(self.script_sig.deserialize(io, ser));
+      r += try!(self.sequence.deserialize(io, ser));
       Ok(r)
    }
 }
@@ -104,10 +104,10 @@ impl Serializable for TxOut {
       r += try!(self.script_pubkey.serialize(io, ser));
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
+   fn deserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r:usize = 0;
-      r += try!(self.value.unserialize(io, ser));
-      r += try!(self.script_pubkey.unserialize(io, ser));
+      r += try!(self.value.deserialize(io, ser));
+      r += try!(self.script_pubkey.deserialize(io, ser));
       Ok(r)
    }
 }
@@ -127,12 +127,12 @@ impl Serializable for Transaction {
       r += try!(self.locktime.serialize(io, ser));
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
+   fn deserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r:usize = 0;
-      r += try!(self.version.unserialize(io, ser));
-      r += try!(self.ins.unserialize(io, ser));
-      r += try!(self.outs.unserialize(io, ser));
-      r += try!(self.locktime.unserialize(io, ser));
+      r += try!(self.version.deserialize(io, ser));
+      r += try!(self.ins.deserialize(io, ser));
+      r += try!(self.outs.deserialize(io, ser));
+      r += try!(self.locktime.deserialize(io, ser));
       Ok(r)
    }
 }

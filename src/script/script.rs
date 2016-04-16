@@ -19,8 +19,8 @@ impl Serializable for Script {
    fn serialize(&self, io:&mut std::io::Write, ser:&serialize::SerializeParam) -> serialize::Result {
       self.base.serialize(io,ser)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
-      self.base.unserialize(io,ser)
+   fn deserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
+      self.base.deserialize(io,ser)
    }
 }
 

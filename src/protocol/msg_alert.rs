@@ -29,10 +29,10 @@ impl Serializable for AlertMessage {
       r += try!(self.sig.serialize(io, ser));
       Ok(r)
    }
-   fn unserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
+   fn deserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r:usize = 0;
-      r += try!(self.msg.unserialize(io, ser));
-      r += try!(self.sig.unserialize(io, ser));
+      r += try!(self.msg.deserialize(io, ser));
+      r += try!(self.sig.deserialize(io, ser));
       Ok(r)
    }
 }
