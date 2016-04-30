@@ -2,10 +2,13 @@
 /// connect to bitcoin node and do handshake
 
 use std;
+use std::sync::Arc;
 use std::io::{self,Read,Write};
+use std::collections::HashMap;
 extern crate net2;
 use protocol;
-use serialize::{self, Serializable};
+use serialize::{self, Serializable, UInt256};
+use blockchain::{BlockHeader};
 
 #[allow(dead_code)]
 struct ByteBuf<'a>(&'a [u8]);
@@ -16,6 +19,46 @@ impl<'a> std::fmt::LowerHex for ByteBuf<'a> {
         }
         Ok(())
     }
+}
+
+enum BlockStatus {
+   Init      = 0,
+   GetHeader = 1,
+}
+struct BlockData {
+   status: BlockStatus,
+   hash:   UInt256,
+   header: Option<BlockHeader>,
+   next:   Option<UInt256>,
+}
+impl BlockData {
+   fn new(hash: &UInt256) -> BlockData {
+      BlockData {
+         status: BlockStatus::Init,
+         hash:   hash.clone(),
+         header: None,
+         next:   None,
+      }
+   }
+}
+#[derive(Default)]
+pub struct BlockDB {
+   map: std::collections::HashMap< UInt256, BlockData >,
+}
+impl BlockDB {
+   fn get(&self, hash: &UInt256) -> Option<&BlockData> {
+      self.map.get(hash)
+   }
+   fn get_mut(&mut self, hash: &UInt256) -> Option<&mut BlockData> {
+      self.map.get_mut(hash)
+   }
+   fn insert(&mut self, hash: &UInt256) -> Result<&mut BlockData, &mut BlockData> {
+      use std::collections::hash_map::Entry::{Occupied,Vacant};
+      match self.map.entry(hash.clone()) {
+         Vacant(v)   => Ok(v.insert(BlockData::new(hash))),
+         Occupied(o) => Err(o.into_mut())
+      }
+   }
 }
 
 pub struct Client {
@@ -31,6 +74,8 @@ pub struct Client {
    send_buffer: Vec<u8>,
    send_queue: std::collections::LinkedList< Box<protocol::Message> >,
    send_serialize_param: serialize::SerializeParam,
+
+   pub blocks: BlockDB,
 }
 
 impl Client {
@@ -53,6 +98,8 @@ impl Client {
             sertype: serialize::SER_NET,
             version: protocol::INIT_PROTO_VERSION,
          },
+
+         blocks: BlockDB::default(),
       }
    }
    pub fn run(&mut self, addr: String) -> Result<bool,serialize::Error> {
@@ -282,6 +329,22 @@ impl Client {
       let mut msg = protocol::InvMessage::default();
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
       println!("recv message: {:?}", &msg);
+      for inv in msg.invs.into_iter() {
+         match inv.blocktype {
+            protocol::msg_inv::MessageBlockType::Block => {
+               // To release self borrowing, returs cloned value.
+               match self.blocks.insert(&inv.hash).ok().map(|rBlock| rBlock.hash.clone()) {
+                  Some(hash) => {
+                     // succeed in insert means the block is unknown. Request block header.
+                     self.push(Box::new(protocol::GetHeadersMessage::new(&hash)));
+                  }
+                  None => ()
+               };
+            }
+            _ => {}
+         }
+
+      }
       Ok(r)
    }
    fn on_recv_getdata(&mut self) -> Result<usize, serialize::Error> {
@@ -324,6 +387,8 @@ impl Client {
       let mut msg = protocol::HeadersMessage::default();
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
       println!("recv message: {:?}", &msg);
+      for h in msg.headers.iter() {
+      }
       Ok(r)
    }
    fn on_recv_block(&mut self) -> Result<usize, serialize::Error> {

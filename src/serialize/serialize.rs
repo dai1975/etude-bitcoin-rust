@@ -214,7 +214,7 @@ impl Serializable for i64 {
    }
 }
 
-#[derive(Debug,Default,Clone,PartialEq)]
+#[derive(Debug,Default,Clone,PartialEq,Eq,Hash)]
 pub struct UInt256 {
    pub data: [u8;32],
 }
@@ -547,3 +547,14 @@ IMPL_ARRAY!(17);
 IMPL_ARRAY!(18);
 IMPL_ARRAY!(19);
 
+
+#[test]
+fn test_serialize() {
+   let serpara = serialize::SerializeParam::new_net();
+
+   let u32:u32 = 0x12345678;
+   let buf = vec![0u8; u32.get_serialize_size(&serpara)];
+   assert_eq!(Ok(4), u32.serialize(&mut buf[..], &serpara));
+   assert_eq!([0x12, 0x34, 0x56, 0x78], buf[..]);
+   
+}

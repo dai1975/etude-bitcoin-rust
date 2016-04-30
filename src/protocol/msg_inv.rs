@@ -13,10 +13,10 @@ impl Default for MessageBlockType {
       MessageBlockType::Tx
    }
 }
-impl super::Message for InvMessage {
-   fn get_command(&self) -> [u8; super::message_header::COMMAND_SIZE] {
-      super::message_header::COMMAND_INV
-   }
+impl MessageBlockType {
+   pub fn is_tx(&self) -> bool { *self == MessageBlockType::Tx }
+   pub fn is_block(&self) -> bool { *self == MessageBlockType::Block }
+   pub fn is_filtered_block(&self) -> bool { *self == MessageBlockType::FilteredBlock }
 }
 
 impl Serializable for MessageBlockType {
@@ -80,6 +80,11 @@ impl Serializable for Inv {
 #[derive(Debug,Default)]
 pub struct InvMessage {
    pub invs : Vec<Inv>,
+}
+impl super::Message for InvMessage {
+   fn get_command(&self) -> [u8; super::message_header::COMMAND_SIZE] {
+      super::message_header::COMMAND_INV
+   }
 }
 impl std::fmt::Display for InvMessage {
    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
