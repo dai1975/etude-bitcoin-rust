@@ -103,6 +103,23 @@ macro_rules! ADD_SERIALIZE_METHODS {
    }
 }
 
+impl Serializable for bool {
+   fn get_serialize_size(&self, _ser:&SerializeParam) -> usize {
+      1
+   }
+   fn serialize(&self, io: &mut std::io::Write, _ser:&SerializeParam) -> Result {
+      let buf: [u8; 1] = [if *self {1} else {0}];
+      try!(io.write_all(&buf));
+      Ok(buf.len())
+   }
+   fn deserialize(&mut self, io: &mut std::io::Read, _ser:&SerializeParam) -> Result {
+      let mut buf: [u8; 1] = [0];
+      try!(io.read_exact(&mut buf));
+      *self = buf[0] != 0;
+      Ok(buf.len())
+   }
+}
+
 impl Serializable for u8 {
    fn get_serialize_size(&self, _ser:&SerializeParam) -> usize {
       1

@@ -189,8 +189,8 @@ impl Client {
       msg.version = ::protocol::PROTOCOL_VERSION;
       {
          let s = self.stream.as_ref().unwrap();
-         msg.addr_me.set_services(0).set_ip(&s.local_addr().unwrap());
-         msg.addr_you.set_services(0).set_ip(&s.peer_addr().unwrap());
+         msg.addr_from.set_services(0).set_ip(&s.local_addr().unwrap());
+         msg.addr_recv.set_services(0).set_ip(&s.peer_addr().unwrap());
       }
       self.push(msg);
       Ok(())

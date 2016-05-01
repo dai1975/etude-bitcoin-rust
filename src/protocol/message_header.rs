@@ -6,7 +6,6 @@ use ::serialize::{Serializable};
 
 pub const MESSAGE_START_SIZE:usize  =  4;
 pub const COMMAND_SIZE:usize        = 12;
-pub const MAX_SUBVERSION_LENGTH:u64 = 256;
 
 pub const START_TESTNET:[u8; MESSAGE_START_SIZE] = [0x0b, 0x11, 0x09, 0x07];
 
