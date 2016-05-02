@@ -14,8 +14,8 @@ impl std::fmt::Display for BlockLocator {
 
 impl Serializable for BlockLocator {
    fn get_serialize_size(&self, ser:&serialize::SerializeParam) -> usize {
-      let mut r:usize = 4;
-      if ser.sertype & serialize::SER_GETHASH != 0 {
+      let mut r:usize = 0;
+      if ser.sertype & serialize::SER_GETHASH == 0 {
          r += ser.version.get_serialize_size(ser);
       }
       r += self.haves.get_serialize_size(ser);
@@ -23,7 +23,7 @@ impl Serializable for BlockLocator {
    }
    fn serialize(&self, io:&mut std::io::Write, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r:usize = 0;
-      if ser.sertype & serialize::SER_GETHASH != 0 {
+      if ser.sertype & serialize::SER_GETHASH == 0 {
          r += try!(ser.version.serialize(io, ser));
       }
       r += try!(self.haves.serialize(io, ser));
@@ -31,7 +31,7 @@ impl Serializable for BlockLocator {
    }
    fn deserialize(&mut self, io:&mut std::io::Read, ser:&serialize::SerializeParam) -> serialize::Result {
       let mut r:usize = 0;
-      if ser.sertype & serialize::SER_GETHASH != 0 {
+      if ser.sertype & serialize::SER_GETHASH == 0 {
          let mut version:i32 = 0;
          r += try!(version.deserialize(io, ser));
       }
