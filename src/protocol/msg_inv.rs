@@ -13,10 +13,19 @@ impl Default for MessageBlockType {
       MessageBlockType::Tx
    }
 }
-impl super::Message for InvMessage {
-   fn get_command(&self) -> [u8; super::message_header::COMMAND_SIZE] {
-      super::message_header::COMMAND_INV
+impl std::fmt::Display for MessageBlockType {
+   fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+      match *self {
+         MessageBlockType::Tx            => write!(f, "tx"),
+         MessageBlockType::Block         => write!(f, "block"),
+         MessageBlockType::FilteredBlock => write!(f, "filtered"),
+      }
    }
+}
+impl MessageBlockType {
+   pub fn is_tx(&self) -> bool { *self == MessageBlockType::Tx }
+   pub fn is_block(&self) -> bool { *self == MessageBlockType::Block }
+   pub fn is_filtered_block(&self) -> bool { *self == MessageBlockType::FilteredBlock }
 }
 
 impl Serializable for MessageBlockType {
@@ -50,6 +59,11 @@ pub struct Inv {
    pub blocktype: MessageBlockType,
    pub hash:      UInt256,
 }
+impl std::fmt::Display for Inv {
+   fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+      write!(f, "{}:{}", self.blocktype, self.hash)
+   }
+}
 impl Inv {
    #[allow(dead_code)]
    pub fn new(blocktype_: MessageBlockType, hash_: UInt256) -> Inv {
@@ -81,9 +95,18 @@ impl Serializable for Inv {
 pub struct InvMessage {
    pub invs : Vec<Inv>,
 }
+impl super::Message for InvMessage {
+   fn get_command(&self) -> [u8; super::message_header::COMMAND_SIZE] {
+      super::message_header::COMMAND_INV
+   }
+}
 impl std::fmt::Display for InvMessage {
    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-      write!(f, "Inv(len={})", self.invs.len())
+      match self.invs.len() {
+         0 => write!(f, "Inv(len={})", self.invs.len()),
+         1 => write!(f, "Inv(len={}, 0={})", self.invs.len(), self.invs[0]),
+         l => write!(f, "Inv(len={}, 0={}, ...{})", self.invs.len(), self.invs[0], self.invs[l-1])
+      }
    }
 }
 

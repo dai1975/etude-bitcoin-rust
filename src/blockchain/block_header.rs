@@ -1,5 +1,7 @@
 use std;
 use ::serialize::{self, Serializable, UInt256};
+extern crate crypto;
+use self::crypto::digest::Digest;
 
 #[derive(Debug,Default,Clone)]
 pub struct BlockHeader {
@@ -15,6 +17,24 @@ impl std::fmt::Display for BlockHeader {
    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
       write!(f, "BlockHeader(version={}, prev={}, merkle={}, time={}, bits={}, nonce={})",
              self.version, self.hash_prev_block, self.hash_merkle_root, self.time, self.bits, self.nonce)
+   }
+}
+
+impl BlockHeader {
+   pub fn calc_hash(&self) -> UInt256 {
+      let serpara = serialize::SerializeParam::new_net();
+      let mut mem = &mut [0u8; 80];
+      let _ = self.serialize(&mut &mut mem[..], &serpara);
+
+      let mut hasher = crypto::sha2::Sha256::new();
+      let out = &mut [0u8; 32];
+      hasher.input(mem);
+      hasher.result(out);
+      hasher.reset();
+      hasher.input(out);
+      hasher.result(out);
+
+      UInt256::new(out)
    }
 }
 

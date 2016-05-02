@@ -7,6 +7,14 @@ pub struct GetHeadersMessage {
    pub locator   : blockchain::BlockLocator,
    pub hash_stop : UInt256,
 }
+impl GetHeadersMessage {
+   pub fn new(hash: &UInt256) -> GetHeadersMessage {
+      GetHeadersMessage {
+         locator   : blockchain::BlockLocator::default(),
+         hash_stop : hash.clone(),
+      }
+   }
+}
 impl super::Message for GetHeadersMessage {
    fn get_command(&self) -> [u8; super::message_header::COMMAND_SIZE] {
       super::message_header::COMMAND_GETHEADERS
