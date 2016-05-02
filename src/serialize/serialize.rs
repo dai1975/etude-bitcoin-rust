@@ -1,7 +1,7 @@
 use std;
 use protocol;
 
-#[derive(Debug)]
+#[derive(Debug,PartialEq)]
 pub struct SerializeError {
    msg: String
 }
@@ -450,7 +450,7 @@ pub struct LimitedString {
 impl LimitedString {
    pub fn new(s: &str, l:u64) -> LimitedString {
       let lim = std::cmp::min(l, std::u32::MAX as u64) as usize;
-      let mut r = LimitedString{ string:String::with_capacity(lim as usize), limit:lim };
+      let mut r = LimitedString{ string: String::new(), limit:lim };
       if s.len() <= lim {
          r.string.push_str(s);
       } else {
@@ -478,18 +478,17 @@ impl LimitedString {
       let mut r = 0usize;
       let mut total = CompactSize{value:0};
       r += try!(total.deserialize(io, ser));
-
       let lim   = lim as usize;
       let total = total.value as usize;
       let mut buf:Vec<u8> = Vec::new();
       if lim < total {
-         buf.reserve(lim as usize);
-         try!(io.read_exact(&mut buf));
+         buf.resize(lim as usize, 0u8);
+         try!(io.read_exact(&mut buf[0..]));
          let tmp = &mut vec![0u8; total - lim];
          try!(io.read_exact(tmp)); //Can I read without buffer?
       } else {
-         buf.reserve(total);
-         try!(io.read_exact(&mut buf));
+         buf.resize(total as usize, 0u8);
+         try!(io.read_exact(&mut buf[0..]));
       }
       r += total;
       {
@@ -566,12 +565,31 @@ IMPL_ARRAY!(19);
 
 
 #[test]
+fn test_slice() {
+   let mut a = [0u8; 6];
+   {
+      let mut s = &mut a[1..];
+      assert_eq!(5, s.len());
+
+      let mut w = &mut s as &mut std::io::Write;
+      assert!(w.write_all(&[1u8, 2u8, 3u8, 4u8]).is_ok());
+   }
+   assert_eq!([0u8, 1u8, 2u8, 3u8, 4u8, 0u8], a);
+}
+#[test]
 fn test_serialize() {
+   use serialize;
    let serpara = serialize::SerializeParam::new_net();
 
    let u32:u32 = 0x12345678;
-   let buf = vec![0u8; u32.get_serialize_size(&serpara)];
-   assert_eq!(Ok(4), u32.serialize(&mut buf[..], &serpara));
-   assert_eq!([0x12, 0x34, 0x56, 0x78], buf[..]);
-   
+   assert_eq!(4, u32.get_serialize_size(&serpara));
+   let mut buf:Vec<u8> = Vec::with_capacity(4);
+   assert_eq!(4, u32.serialize(&mut buf, &serpara).unwrap());
+   assert_eq!([0x78, 0x56, 0x34, 0x12], &buf[..]);
+
+   let mut buf:Vec<u8> = vec![0xFEu8; 6];
+   // So that "&mut [u8]" implements "io::Write", "&mut &mut [u8]" is treat as "&mut io::Write"
+   assert_eq!(5, (&mut buf[1..]).len());
+   assert!(u32.serialize(&mut &mut buf[1..], &serpara).is_ok());
+   assert_eq!([0xfe, 0x78, 0x56, 0x34, 0x12, 0xfe], &buf[..]);
 }

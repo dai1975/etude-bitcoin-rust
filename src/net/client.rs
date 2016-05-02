@@ -162,21 +162,22 @@ impl Client {
 
       let hdrsize = hdr.get_serialize_size(&self.send_serialize_param);
       let objsize = obj.get_serialize_size(&self.send_serialize_param);
-      if self.send_buffer.len() < hdrsize + objsize {
-         self.send_buffer.resize(hdrsize + objsize, 0u8);
+      let msgsize = hdrsize + objsize;
+      if self.send_buffer.len() < msgsize {
+         self.send_buffer.resize(msgsize, 0u8);
       }
 
       try!(obj.serialize(&mut &mut self.send_buffer[hdrsize..], &self.send_serialize_param));
-      hdr.set_data(&obj.get_command(), &self.send_buffer[hdrsize..]);
+      hdr.set_data(&obj.get_command(), &self.send_buffer[hdrsize..msgsize]);
       try!(hdr.serialize(&mut &mut self.send_buffer[0..], &self.send_serialize_param));
 
       //println!("sent:");
-      //println!("{:x}", ByteBuf(&buf[..]));
+      //println!("{:x}", ByteBuf(&self.send_buffer[0..msgsize]));
 
       match self.stream.as_ref() {
          None => (),
          Some(ref mut s) => {
-            try!(s.write_all(&self.send_buffer));
+            try!(s.write_all(&self.send_buffer[0..msgsize]));
          }
       }
       Ok(())
@@ -211,7 +212,7 @@ impl Client {
                }
                Ok(0) => { () }
                Ok(size) => {
-                  //println!("recv: {} {:x}", size, ByteBuf(self.recv_buffer.as_mut_slice()));
+                  //println!("recv: {} {:x}", size, ByteBuf(&self.recv_buffer.as_mut_slice()[0..size]));
                   self.recv_buffer.skip_write(size);
                   //println!("recv:  -> {}", &self.recv_buffer);
                   if self.disconn {

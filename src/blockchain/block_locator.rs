@@ -14,10 +14,11 @@ impl std::fmt::Display for BlockLocator {
 
 impl Serializable for BlockLocator {
    fn get_serialize_size(&self, ser:&serialize::SerializeParam) -> usize {
-      let mut r:usize = 4 + 32 + 32 + 4 + 4 + 4;
+      let mut r:usize = 4;
       if ser.sertype & serialize::SER_GETHASH != 0 {
-         r += ser.version.get_serialize_size(ser)
+         r += ser.version.get_serialize_size(ser);
       }
+      r += self.haves.get_serialize_size(ser);
       r
    }
    fn serialize(&self, io:&mut std::io::Write, ser:&serialize::SerializeParam) -> serialize::Result {
