@@ -21,7 +21,7 @@ impl std::fmt::Display for BlockHeader {
 }
 
 impl BlockHeader {
-   pub fn get_hash(&self) -> UInt256 {
+   pub fn calc_hash(&self) -> UInt256 {
       let serpara = serialize::SerializeParam::new_net();
       let mut mem = &mut [0u8; 80];
       let _ = self.serialize(&mut &mut mem[..], &serpara);
