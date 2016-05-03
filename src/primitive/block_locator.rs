@@ -1,5 +1,6 @@
 use std;
-use ::serialize::{self, Serializable, UInt256};
+use super::{UInt256};
+use ::serialize::{self, Serializable};
 
 #[derive(Debug,Default,Clone)]
 pub struct BlockLocator {

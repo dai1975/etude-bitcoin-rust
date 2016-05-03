@@ -1,5 +1,6 @@
 use std;
-use ::serialize::{self, Serializable, UInt256};
+use super::{UInt256};
+use ::serialize::{self, Serializable};
 extern crate crypto;
 use self::crypto::digest::Digest;
 

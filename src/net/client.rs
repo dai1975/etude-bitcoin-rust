@@ -2,13 +2,11 @@
 /// connect to bitcoin node and do handshake
 
 use std;
-use std::sync::Arc;
 use std::io::{self,Read,Write};
-use std::collections::HashMap;
 extern crate net2;
 use protocol;
-use serialize::{self, Serializable, UInt256};
-use blockchain::{BlockHeader};
+use serialize::{self, Serializable};
+use chain::{BlockIndex, BlockMap};
 
 #[allow(dead_code)]
 struct ByteBuf<'a>(&'a [u8]);
@@ -19,47 +17,6 @@ impl<'a> std::fmt::LowerHex for ByteBuf<'a> {
         }
         Ok(())
     }
-}
-
-#[derive(PartialEq)]
-enum BlockStatus {
-   Init      = 0,
-   GetHeader = 1,
-}
-struct BlockData {
-   status: BlockStatus,
-   hash:   UInt256,
-   header: Option<BlockHeader>,
-   next:   Option<UInt256>,
-}
-impl BlockData {
-   fn new(hash: &UInt256) -> BlockData {
-      BlockData {
-         status: BlockStatus::Init,
-         hash:   hash.clone(),
-         header: None,
-         next:   None,
-      }
-   }
-}
-#[derive(Default)]
-pub struct BlockDB {
-   map: std::collections::HashMap< UInt256, BlockData >,
-}
-impl BlockDB {
-   fn get(&self, hash: &UInt256) -> Option<&BlockData> {
-      self.map.get(hash)
-   }
-   fn get_mut(&mut self, hash: &UInt256) -> Option<&mut BlockData> {
-      self.map.get_mut(hash)
-   }
-   fn insert(&mut self, hash: &UInt256) -> Result<&mut BlockData, &mut BlockData> {
-      use std::collections::hash_map::Entry::{Occupied,Vacant};
-      match self.map.entry(hash.clone()) {
-         Vacant(v)   => Ok(v.insert(BlockData::new(hash))),
-         Occupied(o) => Err(o.into_mut())
-      }
-   }
 }
 
 pub struct Client {
@@ -76,7 +33,7 @@ pub struct Client {
    send_queue: std::collections::LinkedList< Box<protocol::Message> >,
    send_serialize_param: serialize::SerializeParam,
 
-   pub blocks: BlockDB,
+   pub blocks: BlockMap,
 }
 
 impl Client {
@@ -100,7 +57,7 @@ impl Client {
             version: protocol::INIT_PROTO_VERSION,
          },
 
-         blocks: BlockDB::default(),
+         blocks: BlockMap::default(),
       }
    }
    pub fn run(&mut self, addr: String) -> Result<bool,serialize::Error> {
@@ -335,12 +292,9 @@ impl Client {
          match inv.blocktype {
             protocol::msg_inv::MessageBlockType::Block => {
                // To release self borrowing, returs cloned value.
-               match self.blocks.insert(&inv.hash).ok().map(|rBlock| rBlock.hash.clone()) {
-                  Some(hash) => {
-                     // succeed in insert means the block is unknown. Request block header.
-                     self.push(Box::new(protocol::GetHeadersMessage::new(&hash)));
-                  }
-                  None => ()
+               if self.blocks.insert(&inv.hash).is_ok() {
+                  // succeed in insert means the block is unknown. Request block header.
+                  self.push(Box::new(protocol::GetHeadersMessage::new(&inv.hash)));
                };
             }
             _ => {}
@@ -393,9 +347,9 @@ impl Client {
          // first check status of this block in local db
          let key = e.header.calc_hash();
          {
-            let data:&mut BlockData = match self.blocks.get_mut(&key) {
+            let data:&mut BlockIndex = match self.blocks.get_mut(&key) {
                Some(data) => {
-                  if data.status != BlockStatus::Init {
+                  if !data.is_init() {
                      println!("header is already received: {}", key);
                      continue;
                   }
@@ -406,27 +360,25 @@ impl Client {
                   continue;
                }
             };
-            if data.hash != key {
-               println!("hash mismatch: id={}, calc={}", data.hash, key);
+            if key != *data.get_hash() {
+               println!("hash mismatch: id={}, calc={}", data.get_hash(), key);
                continue;
             }
             //set data
             println!("accept new block: {}", key);
-            data.status = BlockStatus::GetHeader;
-            data.header = Some(e.header.clone());
+            data.set_header(e.header.clone());
          }
          // link from prev block
          {
             let prev_hash = &e.header.hash_prev_block;
             if let Some(prev_data) = self.blocks.get_mut(prev_hash) {
-               match prev_data.next {
-                  Some(ref h) if *h == key => { ; }
-                  Some(ref h) => {
+               if let Some(ref h) = *prev_data.get_next() {
+                  if *h != key {
                      println!("Detect a fork. Drop later received one: {} -> {} | {}", prev_hash, h, key);
                   }
-                  None => {
-                     prev_data.next = Some(key.clone());
-                  }
+               }
+               if prev_data.get_next().is_none() {
+                  prev_data.set_next(key.clone());
                }
             }
          }

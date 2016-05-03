@@ -1,10 +1,10 @@
 use std;
 use ::serialize::{self, Serializable};
-use ::blockchain;
+use ::primitive::MerkleBlock;
 
 #[derive(Debug,Default)]
 pub struct MerkleBlockMessage {
-   pub block : blockchain::MerkleBlock,
+   pub block : MerkleBlock,
 }
 impl super::Message for MerkleBlockMessage {
    fn get_command(&self) -> [u8; super::message_header::COMMAND_SIZE] {

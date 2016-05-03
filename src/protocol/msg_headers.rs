@@ -1,6 +1,6 @@
 use std;
 use ::serialize::{self, Serializable, CompactSize};
-use ::blockchain::{BlockHeader};
+use ::primitive::{BlockHeader};
 
 #[derive(Debug,Default,Clone)]
 pub struct HeadersMessageElement {

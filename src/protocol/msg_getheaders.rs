@@ -1,16 +1,17 @@
 use std;
-use ::serialize::{self, Serializable, UInt256};
-use ::blockchain::{self};
+use primitive::{UInt256};
+use ::serialize::{self, Serializable};
+use ::primitive::{BlockLocator};
 
 #[derive(Debug,Default)]
 pub struct GetHeadersMessage {
-   pub locator   : blockchain::BlockLocator,
+   pub locator   : BlockLocator,
    pub hash_stop : UInt256,
 }
 impl GetHeadersMessage {
    pub fn new(hash: &UInt256) -> GetHeadersMessage {
       GetHeadersMessage {
-         locator   : blockchain::BlockLocator::default(),
+         locator   : BlockLocator::default(),
          hash_stop : hash.clone(),
       }
    }

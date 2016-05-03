@@ -1,6 +1,7 @@
 use std;
 extern crate bit_vec;
-use ::serialize::{self, Serializable, UInt256};
+use super::{UInt256};
+use ::serialize::{self, Serializable};
 
 fn reverse_u8(x:u8) -> u8 {
    let x:u8 = ((x & 0x55) << 1) | ((x & 0xAA) >> 1);
