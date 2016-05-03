@@ -1,6 +1,7 @@
 use std;
 extern crate time;
-use ::serialize::{self, SerializeError, Serializable, UInt256};
+use primitive::{UInt256};
+use ::serialize::{self, SerializeError, Serializable};
 
 #[derive(Debug,Clone,PartialEq)]
 pub enum MessageBlockType {

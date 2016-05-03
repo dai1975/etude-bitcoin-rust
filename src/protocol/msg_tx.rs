@@ -1,6 +1,6 @@
 use std;
 use ::serialize::{self, Serializable};
-use ::blockchain::{Transaction};
+use ::primitive::{Transaction};
 
 #[derive(Debug,Default)]
 pub struct TxMessage {

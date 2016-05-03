@@ -1,6 +1,6 @@
 use std;
 use ::serialize::{self, Serializable};
-use ::blockchain::{Block};
+use ::primitive::{Block};
 
 #[derive(Debug,Default,Clone)]
 pub struct BlockMessage {
