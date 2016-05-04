@@ -7,7 +7,7 @@ extern crate net2;
 use protocol;
 use serialize::{self, SerializeError, Serializable};
 use primitive::{Error,ChainParams,BlockHeader,Block};
-use chain::{BlockIndex, BlockMap};
+use chain::{BlockMap};
 
 #[allow(dead_code)]
 struct ByteBuf<'a>(&'a [u8]);
@@ -158,9 +158,11 @@ impl Client {
       Ok(())
    }
    fn accept_header(&mut self, header:&BlockHeader) -> Result<(), Error> {
-      // first check status of this block in local db
+      try!(header.check(&self.chain_params.consensus));
+
       let key = header.calc_hash();
 
+      // check status of this block in local db
       if let Some(data) = self.blocks.get_mut(&key) {
          if !data.is_init() {
             return SerializeError::result::<()>(format!("header is already received: {}", key));

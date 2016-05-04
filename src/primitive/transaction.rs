@@ -1,5 +1,5 @@
 use std;
-use super::{UInt256};
+use super::{Error,UInt256};
 use ::serialize::{self, Serializable};
 use ::script::{Script};
 
@@ -31,6 +31,13 @@ pub struct Transaction {
    outs:     Vec<TxOut>,
    locktime: u32,
 }
+
+impl Transaction {
+   pub fn check(&self) -> Result<(), Error> {
+      Ok(())
+   }
+}
+
 
 impl std::fmt::Display for OutPoint {
    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {

@@ -1,4 +1,4 @@
-pub use self::error::Error;
+pub use self::error::{GenericError, Error};
 pub use self::uint256::{UInt256, ParseUInt256Error};
 pub use self::consensus_params::ConsensusParams;
 pub use self::chain_params::ChainParams;
@@ -17,6 +17,7 @@ pub mod error;
 pub mod uint256;
 pub mod consensus_params;
 pub mod chain_params;
+pub mod pow;
 pub mod transaction;
 pub mod merkle_tree;
 pub mod merkle_block;

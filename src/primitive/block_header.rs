@@ -1,5 +1,5 @@
 use std;
-use super::{UInt256};
+use super::{Error,UInt256,pow,ConsensusParams};
 use ::serialize::{self, Serializable};
 extern crate crypto;
 use self::crypto::digest::Digest;
@@ -38,8 +38,11 @@ impl BlockHeader {
       UInt256::new(out)
    }
 
-   pub fn check(&self) -> bool {
-      true
+   pub fn check(&self, params:&ConsensusParams) -> Result<(), Error> {
+      try!(pow::check_proof_of_work(&self.calc_hash(), self.bits, params));
+
+      // TODO: timestamp check
+      Ok(())
    }
 }
 
