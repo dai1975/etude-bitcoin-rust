@@ -5,7 +5,8 @@ use std;
 use std::io::{self,Read,Write};
 extern crate net2;
 use protocol;
-use serialize::{self, Serializable};
+use serialize::{self, SerializeError, Serializable};
+use primitive::{BlockHeader,Block};
 use chain::{BlockIndex, BlockMap};
 
 #[allow(dead_code)]
@@ -129,8 +130,8 @@ impl Client {
       hdr.set_data(&obj.get_command(), &self.send_buffer[hdrsize..msgsize]);
       try!(hdr.serialize(&mut &mut self.send_buffer[0..], &self.send_serialize_param));
 
-      //println!("sent:");
-      //println!("{:x}", ByteBuf(&self.send_buffer[0..msgsize]));
+//      println!("sent:");
+//      println!("{:x}", ByteBuf(&self.send_buffer[0..msgsize]));
 
       match self.stream.as_ref() {
          None => (),
@@ -152,6 +153,42 @@ impl Client {
          msg.addr_recv.set_services(0).set_ip(&s.peer_addr().unwrap());
       }
       self.push(msg);
+      Ok(())
+   }
+   fn accept_header(&mut self, header:&BlockHeader) -> Result<(), serialize::Error> {
+      // first check status of this block in local db
+      let key = header.calc_hash();
+
+      if let Some(data) = self.blocks.get_mut(&key) {
+         if !data.is_init() {
+            return SerializeError::result::<()>(format!("header is already received: {}", key));
+         }
+         if key != *data.get_hash() {
+            return SerializeError::result::<()>(format!("hash mismatch: id={}, calc={}", data.get_hash(), key));
+         }
+         //set data
+         println!("accept new block: {}", key);
+         data.set_header(header.clone());
+      } else {
+         return SerializeError::result::<()>(format!("unexpected header is received: {}", key));
+      }
+
+      // link from prev block
+      let prev_hash = &header.hash_prev_block.clone();
+      if let Some(prev_data) = self.blocks.get_mut(prev_hash) {
+         if let Some(ref prev_next) = *prev_data.get_next() {
+            if *prev_next != key {
+               println!("Detect a fork. Drop later received one: {} -> {} | {}", prev_hash, prev_next, key);
+            }
+         }
+         if prev_data.get_next().is_none() {
+            prev_data.set_next(key.clone());
+         }
+      }
+      Ok(())
+   }
+   fn accept_block(&mut self, block:&Block) -> Result<(), serialize::Error> {
+      try!(self.accept_header(&block.header));
       Ok(())
    }
 
@@ -211,10 +248,16 @@ impl Client {
             return Ok(0)
          };
          r = try!(self.recv_header.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
+         /* {
+            let h = &self.recv_header;
+            let buf:&[u8] = self.recv_buffer.as_slice();
+            println!("  {} {:x}", h, ByteBuf(buf));
+         } */
          self.recv_mode = 1;
 
       } else if self.recv_mode == 1 { //recv body
          if self.recv_buffer.readable_size() < self.recv_header.size as usize {
+            self.recv_buffer.ensure(self.recv_header.size as usize);
             return Ok(0)
          };
          let result = match self.recv_header.command {
@@ -289,12 +332,12 @@ impl Client {
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
       println!("recv message: {}", &msg);
       for inv in msg.invs.into_iter() {
-         match inv.blocktype {
-            protocol::msg_inv::MessageBlockType::Block => {
+         match inv.invtype {
+            protocol::InvType::Block => {
                // To release self borrowing, returs cloned value.
                if self.blocks.insert(&inv.hash).is_ok() {
-                  // succeed in insert means the block is unknown. Request block header.
-                  self.push(Box::new(protocol::GetHeadersMessage::new(&inv.hash)));
+                  // succeed in insert means the block is unknown. Request block.
+                  self.push(Box::new(protocol::GetDataMessage::new_block(inv.hash.clone())));
                };
             }
             _ => {}
@@ -344,44 +387,7 @@ impl Client {
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
       println!("recv message: {}", &msg);
       for e in msg.headers.iter() {
-         // first check status of this block in local db
-         let key = e.header.calc_hash();
-         {
-            let data:&mut BlockIndex = match self.blocks.get_mut(&key) {
-               Some(data) => {
-                  if !data.is_init() {
-                     println!("header is already received: {}", key);
-                     continue;
-                  }
-                  data
-               }
-               None => {
-                  println!("unexpected header is received: {}", key);
-                  continue;
-               }
-            };
-            if key != *data.get_hash() {
-               println!("hash mismatch: id={}, calc={}", data.get_hash(), key);
-               continue;
-            }
-            //set data
-            println!("accept new block: {}", key);
-            data.set_header(e.header.clone());
-         }
-         // link from prev block
-         {
-            let prev_hash = &e.header.hash_prev_block;
-            if let Some(prev_data) = self.blocks.get_mut(prev_hash) {
-               if let Some(ref h) = *prev_data.get_next() {
-                  if *h != key {
-                     println!("Detect a fork. Drop later received one: {} -> {} | {}", prev_hash, h, key);
-                  }
-               }
-               if prev_data.get_next().is_none() {
-                  prev_data.set_next(key.clone());
-               }
-            }
-         }
+         try!(self.accept_header(&e.header));
       }
       Ok(r)
    }
@@ -390,6 +396,7 @@ impl Client {
       let mut msg = protocol::BlockMessage::default();
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
       println!("recv message: {}", &msg);
+      try!(self.accept_block(&msg.block));
       Ok(r)
    }
    fn on_recv_getaddr(&mut self) -> Result<usize, serialize::Error> {
