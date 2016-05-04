@@ -37,6 +37,10 @@ impl BlockHeader {
 
       UInt256::new(out)
    }
+
+   pub fn check(&self) -> bool {
+      true
+   }
 }
 
 impl Serializable for BlockHeader {

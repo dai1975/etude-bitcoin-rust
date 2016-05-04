@@ -1,4 +1,7 @@
-pub use self::uint256::UInt256;
+pub use self::error::Error;
+pub use self::uint256::{UInt256, ParseUInt256Error};
+pub use self::consensus_params::ConsensusParams;
+pub use self::chain_params::ChainParams;
 pub use self::block::Block;
 pub use self::block_header::BlockHeader;
 pub use self::block_locator::BlockLocator;
@@ -10,7 +13,10 @@ pub use self::transaction::OutPoint;
 pub use self::transaction::Amount;
 pub use self::transaction::Transaction;
 
+pub mod error;
 pub mod uint256;
+pub mod consensus_params;
+pub mod chain_params;
 pub mod transaction;
 pub mod merkle_tree;
 pub mod merkle_block;

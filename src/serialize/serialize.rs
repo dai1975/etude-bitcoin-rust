@@ -1,50 +1,11 @@
 use std;
 use protocol;
-use primitive::UInt256;
-
-#[derive(Debug,PartialEq)]
-pub struct SerializeError {
-   msg: String
-}
-impl std::error::Error for SerializeError {
-   fn description(&self) -> &str {
-      &*self.msg
-   }
-}
-impl std::fmt::Display for SerializeError {
-   fn fmt(&self, f: &mut std::fmt::Formatter) -> std::result::Result<(), std::fmt::Error> {
-      write!(f, "{}", self.msg)
-   }
-}
-
-#[derive(Debug)]
-pub enum Error {
-   Serialize(SerializeError),
-   Io(std::io::Error),
-   Utf8(std::string::FromUtf8Error),
-}
-impl From<SerializeError> for Error {
-   fn from(err: SerializeError) -> Error {
-      Error::Serialize(err)
-   }
-}
-impl From<std::io::Error> for Error {
-   fn from(err: std::io::Error) -> Error {
-      Error::Io(err)
-   }
-}
-impl From<std::string::FromUtf8Error> for Error {
-   fn from(err: std::string::FromUtf8Error) -> Error {
-      Error::Utf8(err)
-   }
-}
+use primitive::{Error,UInt256};
+use super::SerializeError;
 
 pub type Result = std::result::Result<usize, Error>;
 
 impl SerializeError {
-   pub fn new(s:String) -> SerializeError {
-      SerializeError { msg:s }
-   }
    pub fn result<T>(s:String) -> std::result::Result<T, Error> {
       Err(Error::Serialize(SerializeError::new(s)))
    }

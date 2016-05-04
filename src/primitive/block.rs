@@ -6,6 +6,7 @@ use super::{BlockHeader, Transaction};
 pub struct Block {
    pub header: BlockHeader,
    pub transactions: Vec<Transaction>,
+   pub checked: bool,
 }
 
 impl std::fmt::Display for Block {
@@ -29,7 +30,14 @@ impl Serializable for Block {
       let mut r:usize = 0;
       r += try!(self.header.deserialize(io, ser));
       r += try!(self.transactions.deserialize(io, ser));
+      self.checked = false;
       Ok(r)
    }
 }
 
+impl Block {
+   pub fn check(&self) -> bool {
+      if self.checked { return true; }
+      true
+   }
+}
