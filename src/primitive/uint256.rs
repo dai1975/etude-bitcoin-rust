@@ -24,10 +24,18 @@ impl std::fmt::Display for ParseUInt256Error {
 }
 
 
-#[derive(Debug,Default,Clone,PartialEq,Eq,Hash)]
+#[derive(Debug,Default,Clone,PartialEq,Eq,PartialOrd,Ord)]
 pub struct UInt256 {
    pub data: [u8;32],
 }
+impl std::hash::Hash for UInt256 {
+   fn hash<H:std::hash::Hasher>(&self, state:&mut H) {
+      state.write(&self.data[..]);
+   }
+}
+
+const UINT256_NULL:UInt256 = UInt256 { data: [0u8;32] };
+
 impl UInt256 {
    pub fn new(d: &[u8;32]) -> UInt256 {
       let mut v = UInt256 { data: [0;32] };
@@ -46,7 +54,11 @@ impl UInt256 {
    pub fn as_slice(&self) -> &[u8] {
       &self.data[..]
    }
+
+   pub fn set_null(&mut self)    { self.data.clone_from_slice(&UINT256_NULL.data) }
+   pub fn is_null(&self) -> bool { self.data == UINT256_NULL.data }
 }
+
 impl std::ops::Index<usize> for UInt256 {
    type Output = u8;
    fn index(&self, i:usize) -> &u8 {

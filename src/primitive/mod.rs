@@ -1,3 +1,7 @@
+pub const MAX_BLOCK_SIZE:usize = 1000000;
+pub const MAX_BLOCK_SIGOPS:usize = MAX_BLOCK_SIZE/50;
+pub const COINBASE_MATURITY:usize = 100;
+
 pub use self::error::{GenericError, Error};
 pub use self::uint256::{UInt256, ParseUInt256Error};
 pub use self::consensus_params::ConsensusParams;
