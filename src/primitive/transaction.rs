@@ -73,8 +73,8 @@ impl Transaction {
       }
 
       if self.is_coin_base() {
-         let s = self.ins[0].script_sig.size();
-         if s < 2 || 100 < s { try!(Err(GenericError::new("bad cb length"))); }
+         let s = self.ins[0].script_sig.len();
+         if s < 2 || 100 < s { try!(Err(GenericError::new("bad coinbase length"))); }
       } else {
          for pin in self.ins.iter() {
             if pin.prevout.is_null() { try!(Err(GenericError::new("txin has null prevout"))); }
