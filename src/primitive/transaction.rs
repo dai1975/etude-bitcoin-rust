@@ -1,15 +1,24 @@
 use std;
-use super::{UInt256};
-use ::serialize::{self, Serializable};
+use super::{Error,GenericError,UInt256};
+use ::serialize::{self, Serializable, SerializeParam};
 use ::script::{Script};
 
 pub type Amount = i64;
 
-#[derive(Debug,Default,Clone)]
+const COIN:Amount = 100000000;
+const CENT:Amount = 1000000;
+const MAX_MONEY:Amount = 21000000 * COIN;
+
+#[derive(Debug,Default,Clone,Eq,PartialEq,PartialOrd,Ord)]
 pub struct OutPoint {
    pub hash: UInt256,
-   pub n:    i32,
+   pub n:    u32,
 }
+impl OutPoint {
+   pub fn set_null(&mut self)    { self.hash.set_null();  self.n = std::u32::MAX }
+   pub fn is_null(&self) -> bool { self.hash.is_null() && self.n == std::u32::MAX }
+}
+
 
 #[derive(Debug,Default,Clone)]
 pub struct TxIn {
@@ -31,6 +40,51 @@ pub struct Transaction {
    outs:     Vec<TxOut>,
    locktime: u32,
 }
+
+impl Transaction {
+   pub fn is_coin_base(&self) -> bool {
+      self.ins.len() == 1 && self.ins[0].prevout.is_null()
+   }
+
+   pub fn check(&self) -> Result<(), Error> {
+      if self.ins.is_empty()  { try!(Err(GenericError::new("empty tx inputs"))); }
+      if self.outs.is_empty() { try!(Err(GenericError::new("empty tx outputs"))); }
+
+      {
+         let s = self.get_serialize_size(&SerializeParam::new_net());
+         if s < super::MAX_BLOCK_SIZE { try!(Err(GenericError::new("oversize tx"))); }
+      }
+
+      {
+         let mut amount:Amount = 0;
+         for pout in self.outs.iter() {
+            if pout.value < 0 { try!(Err(GenericError::new("negative tx out"))); }
+            if MAX_MONEY < pout.value { try!(Err(GenericError::new("toolarge tx out"))); }
+            amount += pout.value;
+            if MAX_MONEY < amount { try!(Err(GenericError::new("toolarge total tx out"))); }
+         }
+      }
+
+      {
+         let mut set = std::collections::BTreeSet::<&OutPoint>::new();
+         for pin in self.ins.iter() {
+            if !set.insert(&pin.prevout) { try!(Err(GenericError::new("duplicated tx in"))); }
+         }
+      }
+
+      if self.is_coin_base() {
+         let s = self.ins[0].script_sig.len();
+         if s < 2 || 100 < s { try!(Err(GenericError::new("bad coinbase length"))); }
+      } else {
+         for pin in self.ins.iter() {
+            if pin.prevout.is_null() { try!(Err(GenericError::new("txin has null prevout"))); }
+         }
+      }
+
+      Ok(())
+   }
+}
+
 
 impl std::fmt::Display for OutPoint {
    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {

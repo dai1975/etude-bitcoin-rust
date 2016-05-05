@@ -3,7 +3,11 @@ use ::serialize::{self, Serializable};
 
 #[derive(Debug,Clone,Default)]
 pub struct Script {
-   pub base: Vec<u8>,
+   base: Vec<u8>,
+}
+
+impl Script {
+   pub fn len(&self) -> usize { self.base.len() }
 }
 
 impl std::fmt::Display for Script {
@@ -23,4 +27,3 @@ impl Serializable for Script {
       self.base.deserialize(io,ser)
    }
 }
-

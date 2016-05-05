@@ -5,8 +5,9 @@ use std;
 use std::io::{self,Read,Write};
 extern crate net2;
 use protocol;
-use serialize::{self, Serializable};
-use chain::{BlockIndex, BlockMap};
+use serialize::{self, SerializeError, Serializable};
+use primitive::{Error,ChainParams,BlockHeader,Block};
+use chain::{BlockMap};
 
 #[allow(dead_code)]
 struct ByteBuf<'a>(&'a [u8]);
@@ -20,6 +21,7 @@ impl<'a> std::fmt::LowerHex for ByteBuf<'a> {
 }
 
 pub struct Client {
+   chain_params: &'static ChainParams,
    disconn: bool,
    stream: Option<std::net::TcpStream>,
    version: i32,
@@ -33,12 +35,13 @@ pub struct Client {
    send_queue: std::collections::LinkedList< Box<protocol::Message> >,
    send_serialize_param: serialize::SerializeParam,
 
-   pub blocks: BlockMap,
+   blocks: BlockMap,
 }
 
 impl Client {
    pub fn new() -> Client {
       Client {
+         chain_params: ChainParams::get("test"),
          disconn: false,
          stream:  None,
          version: 0,
@@ -60,7 +63,7 @@ impl Client {
          blocks: BlockMap::default(),
       }
    }
-   pub fn run(&mut self, addr: String) -> Result<bool,serialize::Error> {
+   pub fn run(&mut self, addr: String) -> Result<bool,Error> {
       try!(self.connect(addr));
       println!("connected");
       try!(self.send_version());
@@ -70,7 +73,7 @@ impl Client {
       Ok(true)
    }
 
-   fn close(&mut self) -> Result< (), serialize::Error > {
+   fn close(&mut self) -> Result< (), Error > {
       match self.stream {
          Some(ref mut s) => {
             let _ = s.shutdown(std::net::Shutdown::Both);
@@ -81,7 +84,7 @@ impl Client {
       Ok(())
    }
 
-   fn connect(&mut self, addr: String) -> Result< bool, serialize::Error > {
+   fn connect(&mut self, addr: String) -> Result< bool, Error > {
       match self.stream {
          Some(_) => {
             try!(Err(io::Error::new(io::ErrorKind::AlreadyExists, "already connected")))
@@ -110,7 +113,7 @@ impl Client {
       self.send_queue.push_back(obj);
    }
 
-   fn send(&mut self, obj: &protocol::Message) -> Result< (), serialize::Error >
+   fn send(&mut self, obj: &protocol::Message) -> Result< (), Error >
    {
       println!("send message: {}", &obj);
       if self.stream.is_none() {
@@ -129,8 +132,8 @@ impl Client {
       hdr.set_data(&obj.get_command(), &self.send_buffer[hdrsize..msgsize]);
       try!(hdr.serialize(&mut &mut self.send_buffer[0..], &self.send_serialize_param));
 
-      //println!("sent:");
-      //println!("{:x}", ByteBuf(&self.send_buffer[0..msgsize]));
+//      println!("sent:");
+//      println!("{:x}", ByteBuf(&self.send_buffer[0..msgsize]));
 
       match self.stream.as_ref() {
          None => (),
@@ -141,7 +144,7 @@ impl Client {
       Ok(())
    }
 
-   fn send_version(&mut self) -> Result< (), serialize::Error > {
+   fn send_version(&mut self) -> Result< (), Error > {
       if self.stream.is_none() { try!(Err(io::Error::new(io::ErrorKind::NotConnected, "not connected"))) }
 
       let mut msg = Box::new(protocol::VersionMessage::default());
@@ -154,8 +157,46 @@ impl Client {
       self.push(msg);
       Ok(())
    }
+   fn accept_header(&mut self, header:&BlockHeader) -> Result<(), Error> {
+      try!(header.check(&self.chain_params.consensus));
 
-   fn ioloop(&mut self) -> Result< (), serialize::Error > {
+      let key = header.calc_hash();
+
+      // check status of this block in local db
+      if let Some(data) = self.blocks.get_mut(&key) {
+         if !data.is_init() {
+            return SerializeError::result::<()>(format!("header is already received: {}", key));
+         }
+         if key != *data.get_hash() {
+            return SerializeError::result::<()>(format!("hash mismatch: id={}, calc={}", data.get_hash(), key));
+         }
+         //set data
+         println!("accept new block: {}", key);
+         data.set_header(header.clone());
+      } else {
+         return SerializeError::result::<()>(format!("unexpected header is received: {}", key));
+      }
+
+      // link from prev block
+      let prev_hash = &header.hash_prev_block.clone();
+      if let Some(prev_data) = self.blocks.get_mut(prev_hash) {
+         if let Some(ref prev_next) = *prev_data.get_next() {
+            if *prev_next != key {
+               println!("Detect a fork. Drop later received one: {} -> {} | {}", prev_hash, prev_next, key);
+            }
+         }
+         if prev_data.get_next().is_none() {
+            prev_data.set_next(key.clone());
+         }
+      }
+      Ok(())
+   }
+   fn accept_block(&mut self, block:&Block) -> Result<(), Error> {
+      try!(self.accept_header(&block.header));
+      Ok(())
+   }
+
+   fn ioloop(&mut self) -> Result< (), Error > {
       if self.stream.is_none() { try!(Err(io::Error::new(io::ErrorKind::NotConnected, "not connected"))) }
 
       loop { 
@@ -204,17 +245,23 @@ impl Client {
       Ok(())
    }
 
-   fn on_recv(&mut self) -> Result<usize, serialize::Error> {
+   fn on_recv(&mut self) -> Result<usize, Error> {
       let mut r:usize = 0;
       if self.recv_mode == 0 { //recv header
          if self.recv_buffer.readable_size() < protocol::MessageHeader::GetSerializableSize() {
             return Ok(0)
          };
          r = try!(self.recv_header.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
+         /* {
+            let h = &self.recv_header;
+            let buf:&[u8] = self.recv_buffer.as_slice();
+            println!("  {} {:x}", h, ByteBuf(buf));
+         } */
          self.recv_mode = 1;
 
       } else if self.recv_mode == 1 { //recv body
          if self.recv_buffer.readable_size() < self.recv_header.size as usize {
+            self.recv_buffer.ensure(self.recv_header.size as usize);
             return Ok(0)
          };
          let result = match self.recv_header.command {
@@ -249,7 +296,7 @@ impl Client {
       Ok(r)
    }
 
-   fn on_recv_version(&mut self) -> Result<usize, serialize::Error> {
+   fn on_recv_version(&mut self) -> Result<usize, Error> {
       let mut r = 0usize;
       let mut msg = protocol::VersionMessage::default();
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
@@ -268,7 +315,7 @@ impl Client {
       }
       Ok(r)
    }
-   fn on_recv_verack(&mut self) -> Result<usize, serialize::Error> {
+   fn on_recv_verack(&mut self) -> Result<usize, Error> {
       let mut r = 0usize;
       let mut msg = protocol::VerAckMessage::default();
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
@@ -276,25 +323,25 @@ impl Client {
       self.recv_serialize_param.version = std::cmp::min(self.version, protocol::PROTOCOL_VERSION);
       Ok(r)
    }
-   fn on_recv_addr(&mut self) -> Result<usize, serialize::Error> {
+   fn on_recv_addr(&mut self) -> Result<usize, Error> {
       let mut r = 0usize;
       let mut msg = protocol::AddrMessage::default();
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
       println!("recv message: {}", &msg);
       Ok(r)
    }
-   fn on_recv_inv(&mut self) -> Result<usize, serialize::Error> {
+   fn on_recv_inv(&mut self) -> Result<usize, Error> {
       let mut r = 0usize;
       let mut msg = protocol::InvMessage::default();
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
       println!("recv message: {}", &msg);
       for inv in msg.invs.into_iter() {
-         match inv.blocktype {
-            protocol::msg_inv::MessageBlockType::Block => {
+         match inv.invtype {
+            protocol::InvType::Block => {
                // To release self borrowing, returs cloned value.
                if self.blocks.insert(&inv.hash).is_ok() {
-                  // succeed in insert means the block is unknown. Request block header.
-                  self.push(Box::new(protocol::GetHeadersMessage::new(&inv.hash)));
+                  // succeed in insert means the block is unknown. Request block.
+                  self.push(Box::new(protocol::GetDataMessage::new_block(inv.hash.clone())));
                };
             }
             _ => {}
@@ -303,110 +350,74 @@ impl Client {
       }
       Ok(r)
    }
-   fn on_recv_getdata(&mut self) -> Result<usize, serialize::Error> {
+   fn on_recv_getdata(&mut self) -> Result<usize, Error> {
       let mut r = 0usize;
       let mut msg = protocol::GetDataMessage::default();
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
       println!("recv message: {}", &msg);
       Ok(r)
    }
-   fn on_recv_merkleblock(&mut self) -> Result<usize, serialize::Error> {
+   fn on_recv_merkleblock(&mut self) -> Result<usize, Error> {
       let mut r = 0usize;
       let mut msg = protocol::MerkleBlockMessage::default();
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
       println!("recv message: {}", &msg);
       Ok(r)
    }
-   fn on_recv_getblocks(&mut self) -> Result<usize, serialize::Error> {
+   fn on_recv_getblocks(&mut self) -> Result<usize, Error> {
       let mut r = 0usize;
       let mut msg = protocol::GetBlocksMessage::default();
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
       println!("recv message: {}", &msg);
       Ok(r)
    }
-   fn on_recv_getheaders(&mut self) -> Result<usize, serialize::Error> {
+   fn on_recv_getheaders(&mut self) -> Result<usize, Error> {
       let mut r = 0usize;
       let mut msg = protocol::GetHeadersMessage::default();
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
       println!("recv message: {}", &msg);
       Ok(r)
    }
-   fn on_recv_tx(&mut self) -> Result<usize, serialize::Error> {
+   fn on_recv_tx(&mut self) -> Result<usize, Error> {
       let mut r = 0usize;
       let mut msg = protocol::TxMessage::default();
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
       println!("recv message: {}", &msg);
       Ok(r)
    }
-   fn on_recv_headers(&mut self) -> Result<usize, serialize::Error> {
+   fn on_recv_headers(&mut self) -> Result<usize, Error> {
       let mut r = 0usize;
       let mut msg = protocol::HeadersMessage::default();
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
       println!("recv message: {}", &msg);
       for e in msg.headers.iter() {
-         // first check status of this block in local db
-         let key = e.header.calc_hash();
-         {
-            let data:&mut BlockIndex = match self.blocks.get_mut(&key) {
-               Some(data) => {
-                  if !data.is_init() {
-                     println!("header is already received: {}", key);
-                     continue;
-                  }
-                  data
-               }
-               None => {
-                  println!("unexpected header is received: {}", key);
-                  continue;
-               }
-            };
-            if key != *data.get_hash() {
-               println!("hash mismatch: id={}, calc={}", data.get_hash(), key);
-               continue;
-            }
-            //set data
-            println!("accept new block: {}", key);
-            data.set_header(e.header.clone());
-         }
-         // link from prev block
-         {
-            let prev_hash = &e.header.hash_prev_block;
-            if let Some(prev_data) = self.blocks.get_mut(prev_hash) {
-               if let Some(ref h) = *prev_data.get_next() {
-                  if *h != key {
-                     println!("Detect a fork. Drop later received one: {} -> {} | {}", prev_hash, h, key);
-                  }
-               }
-               if prev_data.get_next().is_none() {
-                  prev_data.set_next(key.clone());
-               }
-            }
-         }
+         try!(self.accept_header(&e.header));
       }
       Ok(r)
    }
-   fn on_recv_block(&mut self) -> Result<usize, serialize::Error> {
+   fn on_recv_block(&mut self) -> Result<usize, Error> {
       let mut r = 0usize;
       let mut msg = protocol::BlockMessage::default();
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
       println!("recv message: {}", &msg);
+      try!(self.accept_block(&msg.block));
       Ok(r)
    }
-   fn on_recv_getaddr(&mut self) -> Result<usize, serialize::Error> {
+   fn on_recv_getaddr(&mut self) -> Result<usize, Error> {
       let mut r = 0usize;
       let mut msg = protocol::GetAddrMessage::default();
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
       println!("recv message: {}", &msg);
       Ok(r)
    }
-   fn on_recv_mempool(&mut self) -> Result<usize, serialize::Error> {
+   fn on_recv_mempool(&mut self) -> Result<usize, Error> {
       let mut r = 0usize;
       let mut msg = protocol::MemPoolMessage::default();
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
       println!("recv message: {}", &msg);
       Ok(r)
    }
-   fn on_recv_ping(&mut self) -> Result<usize, serialize::Error> {
+   fn on_recv_ping(&mut self) -> Result<usize, Error> {
       let mut r = 0usize;
       let mut msg = protocol::PingMessage::default();
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
@@ -414,63 +425,63 @@ impl Client {
       self.push(Box::new(protocol::PongMessage::new(&msg)));
       Ok(r)
    }
-   fn on_recv_pong(&mut self) -> Result<usize, serialize::Error> {
+   fn on_recv_pong(&mut self) -> Result<usize, Error> {
       let mut r = 0usize;
       let mut msg = protocol::PongMessage::default();
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
       println!("recv message: {}", &msg);
       Ok(r)
    }
-   fn on_recv_alert(&mut self) -> Result<usize, serialize::Error> {
+   fn on_recv_alert(&mut self) -> Result<usize, Error> {
       let mut r = 0usize;
       let mut msg = protocol::AlertMessage::default();
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
       println!("recv message: {}", &msg);
       Ok(r)
    }
-   fn on_recv_notfound(&mut self) -> Result<usize, serialize::Error> {
+   fn on_recv_notfound(&mut self) -> Result<usize, Error> {
       let mut r = 0usize;
       let mut msg = protocol::NotFoundMessage::default();
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
       println!("recv message: {}", &msg);
       Ok(r)
    }
-   fn on_recv_filterload(&mut self) -> Result<usize, serialize::Error> {
+   fn on_recv_filterload(&mut self) -> Result<usize, Error> {
       let mut r = 0usize;
       let mut msg = protocol::FilterLoadMessage::default();
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
       println!("recv message: {}", &msg);
       Ok(r)
    }
-   fn on_recv_filteradd(&mut self) -> Result<usize, serialize::Error> {
+   fn on_recv_filteradd(&mut self) -> Result<usize, Error> {
       let mut r = 0usize;
       let mut msg = protocol::FilterAddMessage::default();
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
       println!("recv message: {}", &msg);
       Ok(r)
    }
-   fn on_recv_filterclear(&mut self) -> Result<usize, serialize::Error> {
+   fn on_recv_filterclear(&mut self) -> Result<usize, Error> {
       let mut r = 0usize;
       let mut msg = protocol::FilterClearMessage::default();
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
       println!("recv message: {}", &msg);
       Ok(r)
    }
-   fn on_recv_reject(&mut self) -> Result<usize, serialize::Error> {
+   fn on_recv_reject(&mut self) -> Result<usize, Error> {
       let mut r = 0usize;
       let mut msg = protocol::RejectMessage::default();
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
       println!("recv message: {}", &msg);
       Ok(r)
    }
-   fn on_recv_sendheaders(&mut self) -> Result<usize, serialize::Error> {
+   fn on_recv_sendheaders(&mut self) -> Result<usize, Error> {
       let mut r = 0usize;
       let mut msg = protocol::SendHeadersMessage::default();
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
       println!("recv message: {}", &msg);
       Ok(r)
    }
-   fn on_recv_unknown(&mut self) -> Result<usize, serialize::Error> {
+   fn on_recv_unknown(&mut self) -> Result<usize, Error> {
       println!("unknown command: {:?}\n", self.recv_header.command);
       //try!(Err(serialize::SerializeError::new("unknown command")));
       Ok(0)

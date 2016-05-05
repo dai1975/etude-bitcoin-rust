@@ -27,6 +27,35 @@ impl RingBuffer {
       self.rpos = 0;
       self.wpos = 0;
    }
+   pub fn fill(&mut self) {
+      if self.rpos == 0 { return; }
+
+      let mut offset = 0;
+      while self.rpos < self.wpos {
+         let (l,r) = self.buf.split_at_mut(self.rpos);
+         let s = std::cmp::min(self.rpos - offset, self.wpos - self.rpos);
+         l[offset .. (offset+s)].clone_from_slice(&r[self.rpos .. (self.rpos+s)]);
+         offset += s;
+         self.rpos += s;
+      }
+      self.wpos = offset;
+      self.rpos = 0;
+   }
+   pub fn ensure(&mut self, newsize:usize) {
+      if newsize <= self.size {
+         self.fill();
+         return;
+      }
+
+      let mut newbuf = vec![0u8; newsize*2];
+      let wsize  = self.wpos - self.rpos;
+
+      newbuf[0..wsize].clone_from_slice(&self.buf[self.rpos .. self.wpos]);
+      self.buf  = newbuf;
+      self.rpos = 0;
+      self.wpos = wsize;
+      self.size = newsize;
+   }
 
    pub fn readable_size(&self) -> usize {
       self.wpos - self.rpos

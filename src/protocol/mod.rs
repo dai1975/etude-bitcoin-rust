@@ -7,12 +7,13 @@ pub const INIT_PROTO_VERSION:i32  = 209;
 pub const MIN_PEER_PROTO_VERSION:i32 = GETHEADERS_VERSION;
 
 pub use self::address::Address;
+pub use self::inv::{InvType, Inv};
 pub use self::message_header::MessageHeader;
 pub use self::message::Message;
 pub use self::msg_version::VersionMessage;
 pub use self::msg_verack::VerAckMessage;
 pub use self::msg_addr::AddrMessage;
-pub use self::msg_inv::{Inv,InvMessage};
+pub use self::msg_inv::InvMessage;
 pub use self::msg_getdata::GetDataMessage;
 pub use self::msg_merkleblock::MerkleBlockMessage;
 pub use self::msg_getblocks::GetBlocksMessage;
@@ -33,6 +34,7 @@ pub use self::msg_reject::RejectMessage;
 pub use self::msg_sendheaders::SendHeadersMessage;
 
 pub mod address;
+pub mod inv;
 pub mod message_header;
 pub mod message;
 pub mod msg_version;
@@ -57,3 +59,4 @@ pub mod msg_filteradd;
 pub mod msg_filterclear;
 pub mod msg_reject;
 pub mod msg_sendheaders;
+

@@ -1,11 +1,37 @@
 use std;
 use ::serialize::{self, Serializable};
-use super::{BlockHeader, Transaction};
+use super::{Error, GenericError, ConsensusParams, UInt256, BlockHeader, Transaction};
 
 #[derive(Debug,Default,Clone)]
 pub struct Block {
    pub header: BlockHeader,
    pub transactions: Vec<Transaction>,
+   pub checked: bool,
+}
+
+impl Block {
+   pub fn check(&mut self, params:&ConsensusParams) -> Result<(), Error> {
+      if self.checked { return Ok(()); }
+
+      try!(self.header.check(params));
+
+      {
+         if self.header.hash_merkle_root != self.calc_merkle_root() {
+            try!(Err(GenericError::new("merkle root mismatch")))
+         }
+      }
+
+      for t in self.transactions.iter() {
+         try!(t.check());
+      }
+
+      self.checked = true;
+      Ok(())
+   }
+
+   pub fn calc_merkle_root(&self) -> UInt256 {
+      UInt256::default()
+   }
 }
 
 impl std::fmt::Display for Block {
@@ -29,6 +55,7 @@ impl Serializable for Block {
       let mut r:usize = 0;
       r += try!(self.header.deserialize(io, ser));
       r += try!(self.transactions.deserialize(io, ser));
+      self.checked = false;
       Ok(r)
    }
 }
