@@ -1,7 +1,7 @@
 use std;
 use super::{Error,GenericError,UInt256};
 use ::serialize::{self, Serializable, SerializeParam};
-use ::script::{Script};
+use ::script::{Script,Interpreter};
 
 pub type Amount = i64;
 
@@ -49,10 +49,10 @@ impl Transaction {
    pub fn check(&self) -> Result<(), Error> {
       if self.ins.is_empty()  { try!(Err(GenericError::new("empty tx inputs"))); }
       if self.outs.is_empty() { try!(Err(GenericError::new("empty tx outputs"))); }
-
+      
       {
          let s = self.get_serialize_size(&SerializeParam::new_net());
-         if s < super::MAX_BLOCK_SIZE { try!(Err(GenericError::new("oversize tx"))); }
+         if s > super::MAX_BLOCK_SIZE { try!(Err(GenericError::new("oversize tx"))); }
       }
 
       {
@@ -64,7 +64,7 @@ impl Transaction {
             if MAX_MONEY < amount { try!(Err(GenericError::new("toolarge total tx out"))); }
          }
       }
-
+         
       {
          let mut set = std::collections::BTreeSet::<&OutPoint>::new();
          for pin in self.ins.iter() {
@@ -72,12 +72,16 @@ impl Transaction {
          }
       }
 
+      println!("tx: i={}, o={}, cb={}", self.ins.len(), self.outs.len(), self.is_coin_base());
       if self.is_coin_base() {
          let s = self.ins[0].script_sig.len();
          if s < 2 || 100 < s { try!(Err(GenericError::new("bad coinbase length"))); }
       } else {
-         for pin in self.ins.iter() {
+         for (i,pin) in self.ins.iter().enumerate() {
+            println!("  check in[{}]...", i);
             if pin.prevout.is_null() { try!(Err(GenericError::new("txin has null prevout"))); }
+            let ip = Interpreter::new();
+            try!(ip.eval(&pin.script_sig));
          }
       }
 

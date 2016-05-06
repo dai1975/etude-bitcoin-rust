@@ -1,6 +1,7 @@
 use std;
-use serialize::SerializeError;
 use super::ParseUInt256Error;
+use serialize::SerializeError;
+use script::ScriptError;
 
 #[derive(Debug,PartialEq)]
 pub struct GenericError {
@@ -32,6 +33,7 @@ pub enum Error {
 
    ParseUInt256(ParseUInt256Error),
    Serialize(SerializeError),
+   Script(ScriptError),
    Generic(GenericError),
 }
 
@@ -62,6 +64,12 @@ impl From<ParseUInt256Error> for Error {
 impl From<SerializeError> for Error {
    fn from(err: SerializeError) -> Error {
       Error::Serialize(err)
+   }
+}
+
+impl From<ScriptError> for Error {
+   fn from(err: ScriptError) -> Error {
+      Error::Script(err)
    }
 }
 

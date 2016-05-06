@@ -6,26 +6,27 @@ use super::{Error, GenericError, ConsensusParams, UInt256, BlockHeader, Transact
 pub struct Block {
    pub header: BlockHeader,
    pub transactions: Vec<Transaction>,
-   pub checked: bool,
+   pub checked: std::cell::Cell<bool>,
 }
 
 impl Block {
-   pub fn check(&mut self, params:&ConsensusParams) -> Result<(), Error> {
-      if self.checked { return Ok(()); }
+   pub fn check(&self, params:&ConsensusParams) -> Result<(), Error> {
+      if self.checked.get() { return Ok(()); }
 
       try!(self.header.check(params));
 
+      /* not implemented yet
       {
          if self.header.hash_merkle_root != self.calc_merkle_root() {
             try!(Err(GenericError::new("merkle root mismatch")))
          }
-      }
+      } */
 
       for t in self.transactions.iter() {
          try!(t.check());
       }
 
-      self.checked = true;
+      self.checked.set(true);
       Ok(())
    }
 
@@ -55,7 +56,7 @@ impl Serializable for Block {
       let mut r:usize = 0;
       r += try!(self.header.deserialize(io, ser));
       r += try!(self.transactions.deserialize(io, ser));
-      self.checked = false;
+      self.checked.set(false);
       Ok(r)
    }
 }

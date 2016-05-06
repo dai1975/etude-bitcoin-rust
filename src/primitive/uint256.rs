@@ -43,7 +43,7 @@ impl UInt256 {
       v
    }
    pub fn from_str(s:&str) -> Result<UInt256, Error> {
-      if s.len() != 64 { try!(Err(ParseUInt256Error::new("string is too short"))); }
+      if s.len() != 64 { try!(Err(ParseUInt256Error::new(&format!("string is too short: {}", s)))); }
       let mut r = UInt256::default();
       for (i,v) in r.data.iter_mut().enumerate() {
          let hex = &s[(i*2)..(i*2+2)];

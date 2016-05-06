@@ -6,7 +6,7 @@ use std::io::{self,Read,Write};
 extern crate net2;
 use protocol;
 use serialize::{self, SerializeError, Serializable};
-use primitive::{Error,ChainParams,BlockHeader,Block};
+use primitive::{Error,ChainParams,BlockHeader,Block,UInt256};
 use chain::{BlockMap};
 
 #[allow(dead_code)]
@@ -163,18 +163,24 @@ impl Client {
       let key = header.calc_hash();
 
       // check status of this block in local db
-      if let Some(data) = self.blocks.get_mut(&key) {
-         if !data.is_init() {
-            return SerializeError::result::<()>(format!("header is already received: {}", key));
-         }
-         if key != *data.get_hash() {
-            return SerializeError::result::<()>(format!("hash mismatch: id={}, calc={}", data.get_hash(), key));
-         }
+      {
+         let mut data = match self.blocks.insert(&key) {
+            Ok(data) => {
+               data
+            },
+            Err(data) => {
+               if !data.is_init() {
+                  return SerializeError::result::<()>(format!("header is already received: {}", key));
+               }
+               if key != *data.get_hash() {
+                  return SerializeError::result::<()>(format!("hash mismatch: id={}, calc={}", data.get_hash(), key));
+               }
+               data
+            },
+         };
          //set data
          println!("accept new block: {}", key);
          data.set_header(header.clone());
-      } else {
-         return SerializeError::result::<()>(format!("unexpected header is received: {}", key));
       }
 
       // link from prev block
@@ -193,7 +199,13 @@ impl Client {
    }
    fn accept_block(&mut self, block:&Block) -> Result<(), Error> {
       try!(self.accept_header(&block.header));
+      try!(block.check(&self.chain_params.consensus));
       Ok(())
+   }
+
+   fn on_establish(&mut self) {
+      let hash:UInt256 = UInt256::from_str("8eeb2fa08f76bd5689a81c2a1de827b3569fc4cc715203b9438a9f0000000000").unwrap();
+      self.push(Box::new(protocol::GetDataMessage::new_block(hash)));
    }
 
    fn ioloop(&mut self) -> Result< (), Error > {
@@ -321,6 +333,7 @@ impl Client {
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
       println!("recv message: {}", &msg);
       self.recv_serialize_param.version = std::cmp::min(self.version, protocol::PROTOCOL_VERSION);
+      self.on_establish();
       Ok(r)
    }
    fn on_recv_addr(&mut self) -> Result<usize, Error> {
@@ -343,6 +356,9 @@ impl Client {
                   // succeed in insert means the block is unknown. Request block.
                   self.push(Box::new(protocol::GetDataMessage::new_block(inv.hash.clone())));
                };
+            }
+            protocol::InvType::Tx => {
+               self.push(Box::new(protocol::GetDataMessage::new_tx(inv.hash.clone())));
             }
             _ => {}
          }
@@ -383,6 +399,7 @@ impl Client {
       let mut msg = protocol::TxMessage::default();
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
       println!("recv message: {}", &msg);
+      try!(msg.tx.check());
       Ok(r)
    }
    fn on_recv_headers(&mut self) -> Result<usize, Error> {

@@ -44,7 +44,7 @@ lazy_static! {
          majority_reject_block_outdated: 75,
          majority_window: 100,
          bip34_height: 21111,
-         bip34_hash: UInt256::from_str("0x0000000023b3a96d3484e5abb3755c413e7d41500f8e2a5c3f0dd01299cd8ef8").unwrap(),
+         bip34_hash: UInt256::from_str("0000000023b3a96d3484e5abb3755c413e7d41500f8e2a5c3f0dd01299cd8ef8").unwrap(),
          pow_limit:  UInt256::from_str("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff").unwrap(),
          pow_target_timespan: 14 * 24 * 60 * 60, // two weeks
          pow_target_spacing:  10 * 60,
