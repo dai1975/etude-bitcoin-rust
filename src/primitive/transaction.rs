@@ -1,12 +1,12 @@
 use std;
 use super::{Error,GenericError,UInt256};
 use ::serialize::{self, Serializable, SerializeParam};
-use ::script::{Script,Interpreter};
+use ::script::{Script};
 
 pub type Amount = i64;
 
 const COIN:Amount = 100000000;
-const CENT:Amount = 1000000;
+//const CENT:Amount = 1000000;
 const MAX_MONEY:Amount = 21000000 * COIN;
 
 #[derive(Debug,Default,Clone,Eq,PartialEq,PartialOrd,Ord)]
@@ -22,26 +22,31 @@ impl OutPoint {
 
 #[derive(Debug,Default,Clone)]
 pub struct TxIn {
-   prevout:    OutPoint,
-   script_sig: Script,
-   sequence:   u32,
+   pub prevout:    OutPoint,
+   pub script_sig: Script,
+   pub sequence:   u32,
 }
 
 #[derive(Debug,Default,Clone)]
 pub struct TxOut {
-   value:         Amount,
-   script_pubkey: Script,
+   pub value:         Amount,
+   pub script_pubkey: Script,
 }
 
 #[derive(Debug,Default,Clone)]
 pub struct Transaction {
-   version:  i32,
-   ins:      Vec<TxIn>,
-   outs:     Vec<TxOut>,
-   locktime: u32,
+   pub version:  i32,
+   pub ins:      Vec<TxIn>,
+   pub outs:     Vec<TxOut>,
+   pub locktime: u32,
 }
 
 impl Transaction {
+   pub fn calc_hash(&self) -> UInt256 {
+      let o:&Serializable = self as &Serializable;
+      o.serialize_hash256(&serialize::SerializeParam::new_gethash()).unwrap()
+   }
+
    pub fn is_coin_base(&self) -> bool {
       self.ins.len() == 1 && self.ins[0].prevout.is_null()
    }
@@ -72,16 +77,12 @@ impl Transaction {
          }
       }
 
-      println!("tx: i={}, o={}, cb={}", self.ins.len(), self.outs.len(), self.is_coin_base());
       if self.is_coin_base() {
          let s = self.ins[0].script_sig.len();
          if s < 2 || 100 < s { try!(Err(GenericError::new("bad coinbase length"))); }
       } else {
-         for (i,pin) in self.ins.iter().enumerate() {
-            println!("  check in[{}]...", i);
+         for pin in self.ins.iter() {
             if pin.prevout.is_null() { try!(Err(GenericError::new("txin has null prevout"))); }
-            let ip = Interpreter::new();
-            try!(ip.eval(&pin.script_sig));
          }
       }
 
@@ -107,7 +108,7 @@ impl std::fmt::Display for TxOut {
 }
 impl std::fmt::Display for Transaction {
    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-      write!(f, "Tx(ver={}, ins={:?}, outs={:?}, locktime={})", self.version, self.ins, self.outs, self.locktime)
+      write!(f, "Tx(ver={}, ins={}, outs={}, locktime={})", self.version, self.ins.len(), self.outs.len(), self.locktime)
    }
 }
 

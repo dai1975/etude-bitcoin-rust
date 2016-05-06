@@ -37,11 +37,12 @@ impl Serializable for InvMessage {
 
 #[test]
 fn test_serialize_inv() {
+   use primitive::UInt256;
    let mut h = InvMessage::default();
    {
-      h.invs.push(Inv::new(MessageBlockType::Tx, UInt256::default()));
-      h.invs.push(Inv::new(MessageBlockType::Block, UInt256::default()));
-      h.invs.push(Inv::new(MessageBlockType::FilteredBlock, UInt256::default()));
+      h.invs.push(Inv::new_tx(UInt256::default()));
+      h.invs.push(Inv::new_block(UInt256::default()));
+      h.invs.push(Inv::new_filtered_block(UInt256::default()));
       h.invs[0].hash[0] = 128u8;
       h.invs[1].hash[0] = 129u8;
       h.invs[2].hash[0] = 130u8;
@@ -82,17 +83,17 @@ fn test_deserialize_inv() {
    assert_eq!(3, h.invs.len());
    {
       let inv = &h.invs[0];
-      assert_eq!(MessageBlockType::Tx, inv.blocktype);
+      assert!(inv.invtype.is_tx());
       assert_eq!([128u8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,], inv.hash.data);
    }
    {
       let inv = &h.invs[1];
-      assert_eq!(MessageBlockType::Block, inv.blocktype);
+      assert!(inv.invtype.is_block());
       assert_eq!([129u8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,], inv.hash.data);
    }
    {
       let inv = &h.invs[2];
-      assert_eq!(MessageBlockType::FilteredBlock, inv.blocktype);
+      assert!(inv.invtype.is_filtered_block());
       assert_eq!([130,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,], inv.hash.data);
    }
 }

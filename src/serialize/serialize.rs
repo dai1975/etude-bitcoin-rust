@@ -2,6 +2,8 @@ use std;
 use protocol;
 use primitive::{Error,UInt256};
 use super::SerializeError;
+extern crate crypto;
+use self::crypto::digest::Digest;
 
 pub type Result = std::result::Result<usize, Error>;
 
@@ -33,12 +35,42 @@ impl SerializeParam {
          version: protocol::PROTOCOL_VERSION,
       }
    }
+   pub fn new_gethash() -> SerializeParam {
+      SerializeParam {
+         sertype: SER_GETHASH,
+         version: protocol::PROTOCOL_VERSION,
+      }
+   }
 }
 
 pub trait Serializable {
    fn get_serialize_size(&self, ser:&SerializeParam) -> usize;
    fn serialize(&self, io:&mut std::io::Write, ser:&SerializeParam) -> Result;
    fn deserialize(&mut self, io:&mut std::io::Read, ser:&SerializeParam) -> Result;
+
+   fn serialize_hash256(&self, ser:&SerializeParam) -> std::result::Result<UInt256, Error> {
+      let mut mem:Vec<u8> = Vec::with_capacity(self.get_serialize_size(ser));
+      self.serialize(&mut mem, ser).and_then(|_| {
+         let mut hasher = crypto::sha2::Sha256::new();
+         let out = &mut [0u8; 32];
+         hasher.input(&mem[..]);
+         hasher.result(out);
+         Ok(UInt256::new(out))
+      })
+   }
+   fn serialize_hash256d(&self, ser:&SerializeParam) -> std::result::Result<UInt256, Error> {
+      let mut mem:Vec<u8> = Vec::with_capacity(self.get_serialize_size(ser));
+      self.serialize(&mut mem, ser).and_then(|_| {
+         let mut hasher = crypto::sha2::Sha256::new();
+         let out = &mut [0u8; 32];
+         hasher.input(&mem[..]);
+         hasher.result(out);
+         hasher.reset();
+         hasher.input(out);
+         hasher.result(out);
+         Ok(UInt256::new(out))
+      })
+   }
 }
 
 #[macro_use]

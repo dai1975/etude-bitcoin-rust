@@ -1,6 +1,6 @@
 use std;
 use ::serialize::{self, Serializable};
-use super::{Error, GenericError, ConsensusParams, UInt256, BlockHeader, Transaction};
+use super::{Error, ConsensusParams, UInt256, BlockHeader, Transaction};
 
 #[derive(Debug,Default,Clone)]
 pub struct Block {

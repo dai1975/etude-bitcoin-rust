@@ -6,8 +6,9 @@ use std::io::{self,Read,Write};
 extern crate net2;
 use protocol;
 use serialize::{self, SerializeError, Serializable};
-use primitive::{Error,ChainParams,BlockHeader,Block,UInt256};
-use chain::{BlockMap};
+use primitive::{Error,ChainParams,BlockHeader,Block,UInt256,Transaction,GenericError};
+use chain::{BlockMap,TransactionMap};
+use script::{Script,Interpreter};
 
 #[allow(dead_code)]
 struct ByteBuf<'a>(&'a [u8]);
@@ -36,6 +37,7 @@ pub struct Client {
    send_serialize_param: serialize::SerializeParam,
 
    blocks: BlockMap,
+   transactions: TransactionMap,
 }
 
 impl Client {
@@ -61,6 +63,7 @@ impl Client {
          },
 
          blocks: BlockMap::default(),
+         transactions: TransactionMap::default(),
       }
    }
    pub fn run(&mut self, addr: String) -> Result<bool,Error> {
@@ -77,7 +80,7 @@ impl Client {
       match self.stream {
          Some(ref mut s) => {
             let _ = s.shutdown(std::net::Shutdown::Both);
-         }
+         },
          None => ()
       }
       self.stream = None;
@@ -170,7 +173,8 @@ impl Client {
             },
             Err(data) => {
                if !data.is_init() {
-                  return SerializeError::result::<()>(format!("header is already received: {}", key));
+                  //return SerializeError::result::<()>(format!("header is already received: {}", key));
+                  return Ok(());
                }
                if key != *data.get_hash() {
                   return SerializeError::result::<()>(format!("hash mismatch: id={}, calc={}", data.get_hash(), key));
@@ -179,7 +183,7 @@ impl Client {
             },
          };
          //set data
-         println!("accept new block: {}", key);
+         println!("accept header: {}", key);
          data.set_header(header.clone());
       }
 
@@ -199,13 +203,115 @@ impl Client {
    }
    fn accept_block(&mut self, block:&Block) -> Result<(), Error> {
       try!(self.accept_header(&block.header));
+
       try!(block.check(&self.chain_params.consensus));
+
+      for ptx in block.transactions.iter() {
+         let _ = self.accept_transaction(ptx, false);
+      }
+      Ok(())
+   }
+
+   fn accept_transaction(&mut self, tx:&Transaction, request_missing:bool) -> Result<(), Error> {
+      let txhash = tx.calc_hash();
+      println!("  accept_tx...: hash={}", txhash);
+      let mut checks:Vec<UInt256> = Vec::new();
+      match self.transactions.insert(&txhash) {
+         Ok(e)  => {
+            e.set_transaction(tx.clone());
+            e
+         }
+         Err(e) => {
+            if e.is_init() {
+               e.set_transaction(tx.clone());
+               e.move_waiters(&mut checks); //move
+            }
+            e
+         },
+      };
+
+      let requests:Vec<UInt256> = tx.ins.iter().filter_map(|pin| {
+         match self.transactions.insert(&pin.prevout.hash) {
+            Ok(e) => {
+               println!("    tx.in[]: not found. hash={}", pin.prevout.hash);
+               e.add_waiter(txhash.clone());
+               Some(pin.prevout.hash.clone())
+            }
+            Err(e) => {
+               if e.is_init() {
+                  println!("    tx.in[]: found but not received. hash={}", pin.prevout.hash);
+                  e.add_waiter(txhash.clone());
+                  Some(pin.prevout.hash.clone())
+               } else {
+                  println!("    tx.in[]: found. hash={}", pin.prevout.hash);
+                  None
+               }
+            }
+         }
+      }).collect();
+
+      if requests.is_empty() {
+         println!("tx({}): all prevout are found. check signature.", tx);
+         checks.push(txhash);
+      } else {
+         println!("tx({}): some prevout are not found. request={}", tx, request_missing);
+         if request_missing {
+            for h in requests.into_iter() {
+               self.push(Box::new(protocol::GetDataMessage::new_tx(h)));
+            }
+         }
+      }
+
+      for h in checks.iter() {
+         match self.check_signature(h) {
+            Err(e) => println!("  sig fail: {:?}, tx={}", e, h),
+            Ok(_) => println!("  sig ok: tx={}", h),
+         }
+      }
+      Ok(())
+   }
+
+   fn check_signature(&mut self, txhash: &UInt256) -> Result<(), Error> {
+      println!("check_signature({})...", txhash);
+      let ptxidx = try!(self.transactions.get(txhash).ok_or(GenericError::new("no transaction index found")));
+      let ptx = match *ptxidx.get_transaction() {
+         None => try!(Err(GenericError::new("no transaction found"))),
+         Some(ref ptx) => ptx
+      };
+
+      let scripts:Vec<(&Script,&Script)> = ptx.ins.iter().filter_map(|pin| {
+         match self.transactions.get(&pin.prevout.hash) {
+            None => None,
+            Some(ptxinidx) => {
+               match *ptxinidx.get_transaction() {
+                  None => None,
+                  Some(ref ptxin) => {
+                     let pubkey = &ptxin.outs[pin.prevout.n as usize].script_pubkey;
+                     Some((pubkey, &pin.script_sig))
+                  }
+               }
+            }
+         }
+      }).collect();
+      if scripts.len() != ptx.ins.len() {
+         println!("check_signature({})...some tx are not found", txhash);
+         return Ok(());
+      }
+
+      for (i, (pubkey, sig)) in scripts.into_iter().enumerate() {
+         println!("check_signature({})[{}]...", txhash, i);
+         let mut ip = Interpreter::new();
+         try!(ip.eval(pubkey));
+         try!(ip.eval(sig));
+      }
       Ok(())
    }
 
    fn on_establish(&mut self) {
       let hash:UInt256 = UInt256::from_str("8eeb2fa08f76bd5689a81c2a1de827b3569fc4cc715203b9438a9f0000000000").unwrap();
-      self.push(Box::new(protocol::GetDataMessage::new_block(hash)));
+      let mut pmsg = Box::new(protocol::GetBlocksMessage::default());
+      pmsg.locator.haves.push(hash);
+      self.push(pmsg);
    }
 
    fn ioloop(&mut self) -> Result< (), Error > {
@@ -399,7 +505,7 @@ impl Client {
       let mut msg = protocol::TxMessage::default();
       r += try!(msg.deserialize(&mut self.recv_buffer.as_slice(), &self.recv_serialize_param));
       println!("recv message: {}", &msg);
-      try!(msg.tx.check());
+      try!(self.accept_transaction(&msg.tx, false));
       Ok(r)
    }
    fn on_recv_headers(&mut self) -> Result<usize, Error> {
