@@ -1,6 +1,17 @@
 use std;
 use ::serialize::{self, Serializable};
 
+#[allow(dead_code)]
+struct ByteBuf<'a>(&'a [u8]);
+impl<'a> std::fmt::LowerHex for ByteBuf<'a> {
+    fn fmt(&self, fmtr: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        for byte in self.0 {
+            try!( fmtr.write_fmt(format_args!("{:02x}", byte)));
+        }
+        Ok(())
+    }
+}
+
 #[derive(Debug,Clone,Default)]
 pub struct Script {
    pub bytecode: Vec<u8>,
@@ -12,7 +23,7 @@ impl Script {
 
 impl std::fmt::Display for Script {
    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-      write!(f, "script(len={})", self.bytecode.len())
+      write!(f, "script({:x})", ByteBuf(&self.bytecode[..]))
    }
 }
 

@@ -31,39 +31,38 @@ impl <'a> Parser<'a> {
    }
 
    pub fn parse_op(&mut self) -> Option<Parsed> {
-      println!("    next. cur={}, len={}", self.cursor, self.bytecode.len());
       let b = self.bytecode;
       let mut i = self.cursor;
-      if i >= b.len() { return None; }
+      if i+1 > b.len() { return None; }
 
       let code = b[i];
-      println!("    code[{}]={}", i, code);
+      println!("    next. len={}, code[{}]={:x}={}...", self.bytecode.len(), i, code, OPCODE_INFO[code as usize].name);
       i += 1;
       let size:usize = match code {
-         _ if OP_PUSHDATA1 > code => {
+         _x if OP_PUSHDATA1 > code => {
             code as usize
          },
          OP_PUSHDATA1 => {
-            if i+1 >= b.len() { return None; }
+            if i+1 > b.len() { return None; }
             let v = b[i];
             i += 1;
             v as usize
          },
          OP_PUSHDATA2 => {
-            if i+2 >= b.len() { return None; }
+            if i+2 > b.len() { return None; }
             let v:u16 = (b[i] as u16) | (b[i+1] as u16) << 8;
             i += 2;
             v as usize
          },
          OP_PUSHDATA4 => {
-            if i+4 >= b.len() { return None; }
+            if i+4 > b.len() { return None; }
             let v:u32 = (b[i] as u32) | (b[i+1] as u32) << 8 | (b[i+2] as u32) << 16 | (b[i+3] as u32) << 24;
             i += 4;
             v as usize
          },
          _ => 0
       };
-      if i+size >= b.len() { return None; }
+      if i+size > b.len() { return None; }
       self.cursor = i + size;
       Some(Parsed(code, b[i..(self.cursor)].to_vec()))
    }

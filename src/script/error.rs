@@ -6,8 +6,8 @@ pub struct ScriptError {
 }
 
 impl ScriptError {
-   pub fn new(s:String) -> ScriptError {
-      ScriptError { msg:s }
+   pub fn new(s:&str) -> ScriptError {
+      ScriptError { msg:s.to_string() }
    }
 }
 

@@ -272,7 +272,7 @@ impl Client {
    }
 
    fn check_signature(&mut self, txhash: &UInt256) -> Result<(), Error> {
-      println!("check_signature({})...", txhash);
+      println!("check_signature(tx={})...", txhash);
       let ptxidx = try!(self.transactions.get(txhash).ok_or(GenericError::new("no transaction index found")));
       let ptx = match *ptxidx.get_transaction() {
          None => try!(Err(GenericError::new("no transaction found"))),
@@ -294,24 +294,33 @@ impl Client {
          }
       }).collect();
       if scripts.len() != ptx.ins.len() {
-         println!("check_signature({})...some tx are not found", txhash);
+         println!("check_signature(tx={})...some tx are not found", txhash);
          return Ok(());
       }
 
       for (i, (pubkey, sig)) in scripts.into_iter().enumerate() {
-         println!("check_signature({})[{}]...", txhash, i);
+         println!("check_signature(tx={}) for in[{}]...", txhash, i);
          let mut ip = Interpreter::new();
-         try!(ip.eval(pubkey));
          try!(ip.eval(sig));
+         try!(ip.eval(pubkey));
       }
       Ok(())
    }
 
    fn on_establish(&mut self) {
-      let hash:UInt256 = UInt256::from_str("8eeb2fa08f76bd5689a81c2a1de827b3569fc4cc715203b9438a9f0000000000").unwrap();
+      let hashstrs = [
+         "000000000000044ddf807cafb2017f1e281f4deae2ec2b8aca2707c9443e0c4e",
+//         "0000000000d91dc6a4c9e89df3a52779e9d8c1f1c8283a4a077cf4d21dec4739",
+      ];
+      for hashstr in hashstrs.iter() {
+         let h:UInt256 = UInt256::from_str(hashstr).unwrap();
+         let pmsg = Box::new(protocol::GetDataMessage::new_block(h));
+         self.push(pmsg);
+      }
+      /*
       let mut pmsg = Box::new(protocol::GetBlocksMessage::default());
       pmsg.locator.haves.push(hash);
-      self.push(pmsg);
+       */
    }
 
    fn ioloop(&mut self) -> Result< (), Error > {
