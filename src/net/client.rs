@@ -207,7 +207,7 @@ impl Client {
       try!(block.check(&self.chain_params.consensus));
 
       for ptx in block.transactions.iter() {
-         let _ = self.accept_transaction(ptx, false);
+         let _ = self.accept_transaction(ptx, true);
       }
       Ok(())
    }

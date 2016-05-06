@@ -44,7 +44,7 @@ pub struct Transaction {
 impl Transaction {
    pub fn calc_hash(&self) -> UInt256 {
       let o:&Serializable = self as &Serializable;
-      o.serialize_hash256(&serialize::SerializeParam::new_gethash()).unwrap()
+      o.serialize_hash256d(&serialize::SerializeParam::new_gethash()).unwrap()
    }
 
    pub fn is_coin_base(&self) -> bool {
