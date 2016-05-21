@@ -27,7 +27,7 @@ impl Interpreter {
    }
 
    fn operate(&mut self, code:u8, follow:Vec<u8>) -> Result<(), ScriptError> {
-      let info = &OPCODE_INFO[code as usize];
+      //let info = &OPCODE_INFO[code as usize];
       //println!("{:x}={}[{}]", code, info.name, follow.len());
       match code {
          _x if code <= OP_PUSHDATA4 => {

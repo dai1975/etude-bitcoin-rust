@@ -309,18 +309,13 @@ impl Client {
 
    fn on_establish(&mut self) {
       let hashstrs = [
-         "000000000000044ddf807cafb2017f1e281f4deae2ec2b8aca2707c9443e0c4e",
-//         "0000000000d91dc6a4c9e89df3a52779e9d8c1f1c8283a4a077cf4d21dec4739",
+         "0000000000003a309aa6be96d21a5e31d221a55a86f7bfeb48ed9d5b26d4f55b",
       ];
       for hashstr in hashstrs.iter() {
          let h:UInt256 = UInt256::from_str(hashstr).unwrap();
          let pmsg = Box::new(protocol::GetDataMessage::new_block(h));
          self.push(pmsg);
       }
-      /*
-      let mut pmsg = Box::new(protocol::GetBlocksMessage::default());
-      pmsg.locator.haves.push(hash);
-       */
    }
 
    fn ioloop(&mut self) -> Result< (), Error > {
