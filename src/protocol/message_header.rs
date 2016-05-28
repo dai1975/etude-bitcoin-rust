@@ -1,7 +1,7 @@
 use std;
 extern crate time;
 use ::serialize::{Serializable};
-use primitive::hash256d;
+use primitive::hasher::hash256d;
 
 pub const MESSAGE_START_SIZE:usize  =  4;
 pub const COMMAND_SIZE:usize        = 12;

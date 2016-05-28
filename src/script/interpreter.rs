@@ -1,24 +1,55 @@
-use super::{ScriptError, Script, Parser, Parsed};
+use std;
+use super::{ScriptError, Script, Parser, Parsed, ScriptNum};
 use super::opcode::*;
+use ::serialize::{self, Serializable};
+use primitive::{hasher};
+
+#[allow(dead_code)]
+struct ByteBuf<'a>(&'a [u8]);
+impl<'a> std::fmt::LowerHex for ByteBuf<'a> {
+    fn fmt(&self, fmtr: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        for byte in self.0 {
+            try!( fmtr.write_fmt(format_args!("{:02x}", byte)));
+        }
+        Ok(())
+    }
+}
 
 #[derive(Debug,Clone)]
 pub struct Interpreter
 {
    stack: Vec<Vec<u8>>,
+   subscript: usize,
 }
 
 impl Interpreter {
    pub fn new() -> Interpreter {
       Interpreter {
          stack:  Vec::new(),
+         subscript: 0usize,
+      }
+   }
+
+   pub fn result(&self) -> bool {
+      match self.stack.last() {
+         None => false,
+         Some(vch) => vch.len() != 0
       }
    }
 
    pub fn eval(&mut self, script:&Script) -> Result<(), ScriptError> {
-      println!("eval: {}", script);
+      //println!("eval: {}", script);
       let mut parser = Parser::new(&script.bytecode);
-      while let Some(Parsed(code,follow)) = parser.parse_op() {
-         try!(self.operate(code, follow));
+      self.subscript = 0usize;
+      while let Some(Parsed(pos, code, ref follow)) = parser.parse_op() {
+         try!(self.operate(script, pos, code, follow));
+
+         let info = &OPCODE_INFO[code as usize];
+         println!("{:x}={}[{}]", code, info.name, follow.len());
+         for (i,v) in self.stack.iter().enumerate() {
+            println!("  [{}] {:x}", i, ByteBuf(&v[..]));
+         }
+
       }
       if !parser.is_end() {
          return Err(ScriptError::new("end before fin"));
@@ -26,20 +57,57 @@ impl Interpreter {
       Ok(())
    }
 
-   fn operate(&mut self, code:u8, follow:Vec<u8>) -> Result<(), ScriptError> {
-      //let info = &OPCODE_INFO[code as usize];
-      //println!("{:x}={}[{}]", code, info.name, follow.len());
+   fn push_true(&mut self) { self.stack.push(vec![1u8]); }
+   fn push_false(&mut self) { self.stack.push(vec![]); }
+
+   fn operate(&mut self, script:&Script, pos:usize, code:u8, follow:&Vec<u8>) -> Result<(), ScriptError> {
+      let sp = serialize::SerializeParam::new_net();
       match code {
          _x if code <= OP_PUSHDATA4 => {
-            self.stack.push(follow);
+            self.stack.push(follow.clone());
+            Ok(())
          },
          _x if code <= OP_16 => {
-            //let n = SriptNum::new(code - (OP_1 - 1));
-            //self.stack.serialize_push(n);
-            ()
+            let n = ScriptNum::new((code - (OP_1 - 1)) as i64);
+            self.stack.push(Vec::<u8>::new());
+            n.serialize(self.stack.last_mut().unwrap(), &sp).unwrap();
+            Ok(())
+         },
+         OP_DUP => {
+            if self.stack.len() < 1 { return Err(ScriptError::new("few stacks")); }
+            let vch = self.stack.last().unwrap().clone();
+            self.stack.push(vch);
+            Ok(())
+         },
+         OP_HASH160 => {
+            if self.stack.len() < 1 { return Err(ScriptError::new("few stacks")); }
+            let rvch = self.stack.last_mut().unwrap();
+            let hash = hasher::hash160(&rvch[..]);
+            rvch.resize(hash.len(), 0u8);
+            rvch.clone_from_slice(&hash[..]);
+            Ok(())
+         },
+         OP_CODESEPARATOR => {
+            self.subscript = pos;
+            Ok(())
+         },
+         _x if (code == OP_EQUAL || code == OP_EQUALVERIFY) => {
+            if self.stack.len() < 2 { return Err(ScriptError::new("few stacks")); }
+            let vch1 = self.stack.pop().unwrap();
+            let vch2 = self.stack.pop().unwrap();
+            match (code, vch1 == vch2) {
+               (OP_EQUAL,true)  => { self.push_true(); Ok(()) },
+               (OP_EQUAL,false) => { self.push_false(); Ok(()) },
+               (OP_EQUALVERIFY,true)  => Ok(()),
+               (OP_EQUALVERIFY,false) => Err(ScriptError::new("equalverify")),
+               _ => Err(ScriptError::new("not reach")),
+            }
          }
-         _ => ()
+         _ => {
+            let info = &OPCODE_INFO[code as usize];
+            println!("  unimplemented {}(0x{:x})", info.name, code);
+            Ok(())
+         },
       }
-      Ok(())
    }
 }

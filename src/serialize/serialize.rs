@@ -1,6 +1,6 @@
 use std;
 use protocol;
-use primitive::{Error,UInt256,hash256d};
+use primitive::{Error,UInt256,hasher};
 use super::SerializeError;
 
 pub type Result = std::result::Result<usize, Error>;
@@ -49,7 +49,7 @@ pub trait Serializable {
    fn serialize_hash256d(&self, ser:&SerializeParam) -> std::result::Result<UInt256, Error> {
       let mut mem:Vec<u8> = Vec::with_capacity(self.get_serialize_size(ser));
       self.serialize(&mut mem, ser).and_then(|_| {
-         Ok(hash256d(&mem[..]))
+         Ok(hasher::hash256d(&mem[..]))
       })
    }
 }

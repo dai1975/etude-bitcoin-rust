@@ -50,6 +50,7 @@ impl Serializable for ScriptNum {
       let mut tmp = [0u8;9];
       let len = serialize(&mut tmp, self.value);
       try!(io.write_all(&tmp[0..len]));
+      println!("scriptnum#serialize: {} -> {:x}", self.value, ::serialize::ByteBuf(&tmp[0..len]));
       Ok(len)
    }
    fn deserialize(&mut self, io:&mut std::io::Read, _ser:&serialize::SerializeParam) -> serialize::Result {
@@ -110,4 +111,14 @@ fn test_0x80() {
    n.value = 0x3939;
    assert_eq!(2, n.deserialize(&mut &buf[0..2], &sp).unwrap());
    assert_eq!(0x80, n.value);
+}
+
+#[test]
+fn test_0x48() {
+   let sp = serialize::SerializeParam::new_net();
+   let mut buf = Vec::<u8>::new();
+
+   let n = ScriptNum::new(0x48);
+   assert_eq!(1, n.serialize(&mut buf, &sp).unwrap());
+   assert_eq!([0x48], &buf[0..1]);
 }

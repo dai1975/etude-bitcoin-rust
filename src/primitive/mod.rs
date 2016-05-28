@@ -4,7 +4,6 @@ pub const COINBASE_MATURITY:usize = 100;
 
 pub use self::error::{GenericError, Error};
 pub use self::uint256::{UInt256, ParseUInt256Error};
-pub use self::hasher::hash256d;
 pub use self::consensus_params::ConsensusParams;
 pub use self::chain_params::ChainParams;
 pub use self::block::Block;

@@ -303,6 +303,11 @@ impl Client {
          let mut ip = Interpreter::new();
          try!(ip.eval(sig));
          try!(ip.eval(pubkey));
+         if ip.result() {
+            println!("  succeeded");
+         } else {
+            println!("  failed");
+         }
       }
       Ok(())
    }

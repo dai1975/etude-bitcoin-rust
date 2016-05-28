@@ -18,7 +18,7 @@ impl <'x> Parser<'x> {
 }
 
 #[derive(Debug,Clone)]
-pub struct Parsed(pub u8, pub Vec<u8>);
+pub struct Parsed(pub usize, pub u8, pub Vec<u8>);
 
 impl <'a> Parser<'a> {
    pub fn parse_bytes(&mut self, size:usize) -> Option<Vec<u8>> {
@@ -35,8 +35,9 @@ impl <'a> Parser<'a> {
       let mut i = self.cursor;
       if i+1 > b.len() { return None; }
 
+      let cursor0 = self.cursor;
       let code = b[i];
-      println!("    next. len={}, code[{}]={:x}={}...", self.bytecode.len(), i, code, OPCODE_INFO[code as usize].name);
+      //println!("    next. len={}, code[{}]={:x}={}...", self.bytecode.len(), i, code, OPCODE_INFO[code as usize].name);
       i += 1;
       let size:usize = match code {
          _x if OP_PUSHDATA1 > code => {
@@ -64,7 +65,7 @@ impl <'a> Parser<'a> {
       };
       if i+size > b.len() { return None; }
       self.cursor = i + size;
-      Some(Parsed(code, b[i..(self.cursor)].to_vec()))
+      Some(Parsed(cursor0, code, b[i..(self.cursor)].to_vec()))
    }
 }
 
