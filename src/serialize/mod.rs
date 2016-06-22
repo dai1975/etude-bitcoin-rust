@@ -1,4 +1,6 @@
 pub use self::error::SerializeError;
+pub use self::hash_writer::HashWriter;
+pub use self::dummy_writer::DummyWriter;
 pub use self::serialize::Result;
 pub use self::serialize::SerializeParam;
 pub use self::serialize::Serializable;
@@ -7,6 +9,8 @@ pub use self::serialize::LimitedString;
 pub use self::serialize::{SER_NET, SER_DISK, SER_GETHASH};
 
 pub mod error;
+pub mod dummy_writer;
+pub mod hash_writer;
 #[macro_use]
 pub mod serialize;
 

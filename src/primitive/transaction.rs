@@ -19,7 +19,6 @@ impl OutPoint {
    pub fn is_null(&self) -> bool { self.hash.is_null() && self.n == std::u32::MAX }
 }
 
-
 #[derive(Debug,Default,Clone)]
 pub struct TxIn {
    pub prevout:    OutPoint,
@@ -39,6 +38,19 @@ pub struct Transaction {
    pub ins:      Vec<TxIn>,
    pub outs:     Vec<TxOut>,
    pub locktime: u32,
+}
+
+impl TxOut {
+   pub fn new() -> TxOut {
+      TxOut { //eq to set_null
+         value: -1,
+         script_pubkey: Script{ bytecode: vec!() },
+      }
+   }
+   pub fn set_null(&mut self) {
+      self.value = -1;
+      self.script_pubkey.bytecode.clear();
+   }
 }
 
 impl Transaction {

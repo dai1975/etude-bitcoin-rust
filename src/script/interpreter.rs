@@ -1,8 +1,8 @@
 use std;
-use super::{ScriptError, Script, Parser, Parsed, ScriptNum};
+use super::{ScriptError, Script, Parser, Parsed, ScriptNum, signature};
 use super::opcode::*;
 use ::serialize::{self, Serializable};
-use primitive::{hasher};
+use primitive::{hasher, Transaction};
 
 #[allow(dead_code)]
 struct ByteBuf<'a>(&'a [u8]);
@@ -19,14 +19,14 @@ impl<'a> std::fmt::LowerHex for ByteBuf<'a> {
 pub struct Interpreter
 {
    stack: Vec<Vec<u8>>,
-   subscript: usize,
+   codesep_pos: usize,
 }
 
 impl Interpreter {
    pub fn new() -> Interpreter {
       Interpreter {
          stack:  Vec::new(),
-         subscript: 0usize,
+         codesep_pos: 0usize,
       }
    }
 
@@ -37,12 +37,13 @@ impl Interpreter {
       }
    }
 
-   pub fn eval(&mut self, script:&Script) -> Result<(), ScriptError> {
+   pub fn eval(&mut self, script:&Script, tx:&Transaction, in_idx:usize, flags:u32) -> Result<(), ScriptError> {
       //println!("eval: {}", script);
+      let checker = signature::Checker::new(tx, in_idx);
       let mut parser = Parser::new(&script.bytecode);
-      self.subscript = 0usize;
+      self.codesep_pos = 0usize;
       while let Some(Parsed(pos, code, ref follow)) = parser.parse_op() {
-         try!(self.operate(script, pos, code, follow));
+         try!(self.operate(script, pos, code, follow, flags, &checker));
 
          let info = &OPCODE_INFO[code as usize];
          println!("{:x}={}[{}]", code, info.name, follow.len());
@@ -60,7 +61,7 @@ impl Interpreter {
    fn push_true(&mut self) { self.stack.push(vec![1u8]); }
    fn push_false(&mut self) { self.stack.push(vec![]); }
 
-   fn operate(&mut self, script:&Script, pos:usize, code:u8, follow:&Vec<u8>) -> Result<(), ScriptError> {
+   fn operate(&mut self, script:&Script, pos:usize, code:u8, follow:&Vec<u8>, flags:u32, checker:&signature::Checker) -> Result<(), ScriptError> {
       let sp = serialize::SerializeParam::new_net();
       match code {
          _x if code <= OP_PUSHDATA4 => {
@@ -87,10 +88,6 @@ impl Interpreter {
             rvch.clone_from_slice(&hash[..]);
             Ok(())
          },
-         OP_CODESEPARATOR => {
-            self.subscript = pos;
-            Ok(())
-         },
          _x if (code == OP_EQUAL || code == OP_EQUALVERIFY) => {
             if self.stack.len() < 2 { return Err(ScriptError::new("few stacks")); }
             let vch1 = self.stack.pop().unwrap();
@@ -103,6 +100,21 @@ impl Interpreter {
                _ => Err(ScriptError::new("not reach")),
             }
          }
+         OP_CODESEPARATOR => {
+            self.codesep_pos = pos;
+            Ok(())
+         },
+         OP_CHECKSIG => {
+            if self.stack.len() < 2 { return Err(ScriptError::new("few stacks")); }
+            let pubkey = self.stack.pop().unwrap();
+            let sig    = self.stack.pop().unwrap();
+            let target = &script.bytecode[self.codesep_pos .. ];
+            match checker.verify(target, &pubkey[..], &sig[..], flags) {
+               Ok(true)  => Ok(()),
+               Err(e) => Err(e),
+               _ => Err(ScriptError::new("checksig"))
+            }
+         },
          _ => {
             let info = &OPCODE_INFO[code as usize];
             println!("  unimplemented {}(0x{:x})", info.name, code);

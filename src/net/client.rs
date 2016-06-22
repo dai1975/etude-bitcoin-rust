@@ -298,11 +298,15 @@ impl Client {
          return Ok(());
       }
 
+      let mut flags:u32 = ::script::flags::SCRIPT_VERIFY_NONE;
+      flags |= ::script::flags::SCRIPT_VERIFY_P2SH;
+      flags |= ::script::flags::SCRIPT_VERIFY_DERSIG;
+      flags |= ::script::flags::SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY;
       for (i, (pubkey, sig)) in scripts.into_iter().enumerate() {
          println!("check_signature(tx={}) for in[{}]...", txhash, i);
          let mut ip = Interpreter::new();
-         try!(ip.eval(sig));
-         try!(ip.eval(pubkey));
+         try!(ip.eval(sig, ptx, i, flags));
+         try!(ip.eval(pubkey, ptx, i, flags));
          if ip.result() {
             println!("  succeeded");
          } else {

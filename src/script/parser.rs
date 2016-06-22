@@ -3,12 +3,12 @@ use super::opcode::*;
 #[derive(Debug,Clone)]
 pub struct Parser<'a>
 {
-   bytecode: &'a Vec<u8>,
+   bytecode: &'a [u8],
    cursor: usize,
 }
 
 impl <'x> Parser<'x> {
-   pub fn new<'a>(bytecode:&'a Vec<u8>) -> Parser<'a> {
+   pub fn new<'a>(bytecode:&'a [u8]) -> Parser<'a> {
       Parser {
          bytecode: bytecode,
          cursor: 0,

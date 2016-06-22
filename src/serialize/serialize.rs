@@ -39,6 +39,12 @@ impl SerializeParam {
          version: protocol::PROTOCOL_VERSION,
       }
    }
+   pub fn new_gethash_ver(ver:i32) -> SerializeParam {
+      SerializeParam {
+         sertype: SER_GETHASH,
+         version: ver,
+      }
+   }
 }
 
 pub trait Serializable {

@@ -4,7 +4,9 @@ pub use self::interpreter::Interpreter;
 pub use self::num::ScriptNum;
 pub use self::script::Script;
 
+pub mod flags;
 mod error;
+mod signature;
 mod opcode;
 mod parser;
 mod interpreter;
