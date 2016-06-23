@@ -105,12 +105,25 @@ impl Interpreter {
             self.codesep_pos = pos;
             Ok(())
          },
-         OP_CHECKSIG => {
+         _x if (code == OP_CHECKSIG || code == OP_CHECKSIGVERIFY) => {
             if self.stack.len() < 2 { return Err(ScriptError::new("few stacks")); }
             let pubkey = self.stack.pop().unwrap();
             let sig    = self.stack.pop().unwrap();
             let target = &script.bytecode[self.codesep_pos .. ];
-            checker.verify(target, &pubkey[..], &sig[..], flags)
+            let r = checker.verify(target, &pubkey[..], &sig[..], flags);
+            match code {
+               OP_CHECKSIG => {
+                  match r {
+                     Ok(_)  => self.push_true(),
+                     Err(_) => self.push_false(),
+                  };
+                  Ok(())
+               },
+               OP_CHECKSIGVERIFY => {
+                  r
+               },
+               _ => Err(ScriptError::new("not reach")),
+            }
          },
          _ => {
             let info = &OPCODE_INFO[code as usize];

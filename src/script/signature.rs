@@ -261,7 +261,7 @@ impl <'a> Serializable for TransactionSignatureSerializer<'a> {
          _             => self.tx.outs.len()
       };
       r += try!(CompactSize::Serialize(num_out as u64, io, param));
-      for i in 0..num_in {
+      for i in 0..num_out {
          r += try!(self.serialize_output(i, io, param));
       }      
       

@@ -12,6 +12,9 @@ impl HashWriter {
       }
    }
    pub fn get_hash(&mut self) -> UInt256 {
+      let first = self.hasher.result();
+      self.hasher.reset();
+      self.hasher.input(first.as_slice());
       self.hasher.result()
    }
    pub fn reset(&mut self) {
