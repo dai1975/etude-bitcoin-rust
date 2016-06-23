@@ -43,14 +43,14 @@ impl Interpreter {
       let mut parser = Parser::new(&script.bytecode);
       self.codesep_pos = 0usize;
       while let Some(Parsed(pos, code, ref follow)) = parser.parse_op() {
-         let info = &OPCODE_INFO[code as usize];
-         println!("{:x}={}[{}]", code, info.name, follow.len());
+         //let info = &OPCODE_INFO[code as usize];
+         //println!("{:x}={}[{}]", code, info.name, follow.len());
 
          try!(self.operate(script, pos, code, follow, flags, &checker));
 
-         for (i,v) in self.stack.iter().enumerate() {
-            println!("  [{}] {:x}", i, ByteBuf(&v[..]));
-         }
+         //for (i,v) in self.stack.iter().enumerate() {
+         //   println!("  [{}] {:x}", i, ByteBuf(&v[..]));
+         //}
 
       }
       if !parser.is_end() {
