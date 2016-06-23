@@ -43,10 +43,11 @@ impl Interpreter {
       let mut parser = Parser::new(&script.bytecode);
       self.codesep_pos = 0usize;
       while let Some(Parsed(pos, code, ref follow)) = parser.parse_op() {
-         try!(self.operate(script, pos, code, follow, flags, &checker));
-
          let info = &OPCODE_INFO[code as usize];
          println!("{:x}={}[{}]", code, info.name, follow.len());
+
+         try!(self.operate(script, pos, code, follow, flags, &checker));
+
          for (i,v) in self.stack.iter().enumerate() {
             println!("  [{}] {:x}", i, ByteBuf(&v[..]));
          }
@@ -109,11 +110,7 @@ impl Interpreter {
             let pubkey = self.stack.pop().unwrap();
             let sig    = self.stack.pop().unwrap();
             let target = &script.bytecode[self.codesep_pos .. ];
-            match checker.verify(target, &pubkey[..], &sig[..], flags) {
-               Ok(true)  => Ok(()),
-               Err(e) => Err(e),
-               _ => Err(ScriptError::new("checksig"))
-            }
+            checker.verify(target, &pubkey[..], &sig[..], flags)
          },
          _ => {
             let info = &OPCODE_INFO[code as usize];

@@ -305,12 +305,14 @@ impl Client {
       for (i, (pubkey, sig)) in scripts.into_iter().enumerate() {
          println!("check_signature(tx={}) for in[{}]...", txhash, i);
          let mut ip = Interpreter::new();
+         println!("---sig:");
          try!(ip.eval(sig, ptx, i, flags));
+         println!("---pubkey:");
          try!(ip.eval(pubkey, ptx, i, flags));
          if ip.result() {
-            println!("  succeeded");
+            println!("--succeeded");
          } else {
-            println!("  failed");
+            println!("--failed");
          }
       }
       Ok(())

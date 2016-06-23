@@ -4,6 +4,7 @@ use super::opcode::*;
 use super::flags::*;
 use primitive::{Transaction, TxOut, pubkey, UInt256};
 use ::serialize::{self, Serializable, SerializeParam, CompactSize};
+use std::error::Error;
 
 pub struct Checker<'a> {
    tx:     &'a Transaction,
@@ -14,7 +15,7 @@ impl <'a> Checker<'a> {
    pub fn new(tx:&'a Transaction, in_idx:usize) -> Checker {
       Checker { tx:tx, in_idx:in_idx } 
    }
-   pub fn verify(&self, target:&[u8], pk:&[u8], sig:&[u8], flags:u32) -> Result<bool, ScriptError> {
+   pub fn verify(&self, target:&[u8], pk:&[u8], sig:&[u8], flags:u32) -> Result<(), ScriptError> {
       try!(check_signature_encoding(sig, flags));
       try!(check_pubkey_encoding(pk, flags));
 
@@ -24,8 +25,10 @@ impl <'a> Checker<'a> {
       };
       let hash = hash_target(target, self.tx, self.in_idx, hash_type);
 
-      let r = pubkey::verify(pk, &hash, sig);
-      Ok(r)
+      match pubkey::verify(pk, &hash, sig) {
+         Ok(_)  => Ok(()),
+         Err(e) => Err(ScriptError::new(e.description())),
+      }
    }
 }
 
@@ -83,7 +86,10 @@ fn is_low_der_signature(vch:&[u8]) -> bool {
    if !is_valid_signature_encoding(vch) {
       return false;
    }
-   pubkey::check_low_s(vch)
+   match pubkey::check_low_s(vch) {
+      Ok(_)  => true,
+      Err(_) => false,
+   }
 }
 
 fn is_defined_hashtype_signature(vch:&[u8]) -> bool {

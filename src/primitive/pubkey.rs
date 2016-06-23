@@ -1,16 +1,27 @@
 extern crate secp256k1;
-use primitive::UInt256;
+use primitive::{GenericError, UInt256};
 
-pub fn check_low_s(vch:&[u8]) -> bool {
-   let ctx  = secp256k1::Secp256k1::new();
-   let mut sign = match secp256k1::Signature::from_der_lax(&ctx, vch) {
-      Ok(sign) => sign,
-      _ => return false
-   };
-   sign.normalize_s(&ctx);
-   true
+impl From< secp256k1::Error > for GenericError {
+   fn from(err: secp256k1::Error) -> GenericError {
+      match err {
+         secp256k1::Error::IncapableContext   => GenericError::new("secp256k1/IncapableContext"),
+         secp256k1::Error::IncorrectSignature => GenericError::new("secp256k1/IncorrectSignature"),
+         secp256k1::Error::InvalidMessage     => GenericError::new("secp256k1/InvalidMessage"),
+         secp256k1::Error::InvalidPublicKey   => GenericError::new("secp256k1/InvalidPublicKey"),
+         secp256k1::Error::InvalidSignature   => GenericError::new("secp256k1/InvalidSignature"),
+         secp256k1::Error::InvalidSecretKey   => GenericError::new("secp256k1/InvalidSecretKey"),
+         secp256k1::Error::InvalidRecoveryId  => GenericError::new("secp256k1/InvalidRecoveryId"),
+      }
+   }
 }
-pub fn verify(pk:&[u8], hash:&UInt256, sig:&[u8]) -> bool {
+
+pub fn check_low_s(vch:&[u8]) -> Result<(), GenericError> {
+   let ctx  = secp256k1::Secp256k1::new();
+   let mut sign = try!(secp256k1::Signature::from_der_lax(&ctx, vch));
+   sign.normalize_s(&ctx);
+   Ok(())
+}
+pub fn verify(pk:&[u8], hash:&UInt256, sig:&[u8]) -> Result<(), GenericError> {
    let mut pubkey = PubKey::new();
    pubkey.set(pk);
    pubkey.verify(hash, sig)
@@ -28,10 +39,13 @@ impl PubKey {
    pub fn set(&mut self, vch:&[u8]) {
       if vch.len() == 0 {
          self.invalidate();
-      } else if vch.len() != PubKey::GetLen(vch[0]) {
-         self.invalidate();
       } else {
-         self.vch.copy_from_slice(vch);
+         let l = PubKey::GetLen(vch[0]);
+         if l != vch.len() {
+            self.invalidate();
+         } else {
+            self.vch[0..l].copy_from_slice(vch);
+         }
       }
    }
    pub fn is_valid(&self) -> bool {
@@ -60,23 +74,21 @@ impl PubKey {
       &self.vch[0..len]
    }
 
-   pub fn verify(&self, hash:&UInt256, sig:&[u8]) -> bool {
+   pub fn verify(&self, hash:&UInt256, sig:&[u8]) -> Result<(), GenericError> {
       if !self.is_valid() {
-         return false;
+         return Err(GenericError::new("invalid pubkey"));
       }
       if sig.len() == 0 {
-         return false;
+         return Err(GenericError::new("empty sig"));
       }
-      self.verify_impl(hash, sig).unwrap_or(false)
-   }
-   pub fn verify_impl(&self, hash:&UInt256, sig:&[u8]) -> Result<bool, secp256k1::Error> {
+
       let ctx  = secp256k1::Secp256k1::new();
       let message = try!(secp256k1::Message::from_slice(hash.as_slice()));
       let pubkey = try!(secp256k1::key::PublicKey::from_slice(&ctx, self.get()));
       let mut signature = try!(secp256k1::Signature::from_der_lax(&ctx, sig));
       signature.normalize_s(&ctx);
       let _ = try!(ctx.verify(&message, &signature, &pubkey));
-      Ok(true)
+      Ok(())
    }
 }
 
