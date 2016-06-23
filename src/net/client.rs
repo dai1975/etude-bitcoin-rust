@@ -272,7 +272,7 @@ impl Client {
    }
 
    fn check_signature(&mut self, txhash: &UInt256) -> Result<(), Error> {
-      println!("check_signature(tx={})...", txhash);
+      //println!("check_signature(tx={})...", txhash);
       let ptxidx = try!(self.transactions.get(txhash).ok_or(GenericError::new("no transaction index found")));
       let ptx = match *ptxidx.get_transaction() {
          None => try!(Err(GenericError::new("no transaction found"))),
@@ -303,22 +303,16 @@ impl Client {
       flags |= ::script::flags::SCRIPT_VERIFY_DERSIG;
       flags |= ::script::flags::SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY;
       for (i, (pubkey, sig)) in scripts.into_iter().enumerate() {
-         println!("check_signature(tx={}) for in[{}]...", txhash, i);
+         //println!("check_signature(tx={}) for in[{}]...", txhash, i);
          let mut ip = Interpreter::new();
-         println!("---sig:");
          try!(ip.eval(sig, ptx, i, flags));
-         println!("---pubkey:");
          try!(ip.eval(pubkey, ptx, i, flags));
-         if ip.result() {
-            println!("--succeeded");
-         } else {
-            println!("--failed");
-         }
       }
       Ok(())
    }
 
    fn on_establish(&mut self) {
+      /*
       let hashstrs = [
          "0000000000003a309aa6be96d21a5e31d221a55a86f7bfeb48ed9d5b26d4f55b",
       ];
@@ -327,6 +321,7 @@ impl Client {
          let pmsg = Box::new(protocol::GetDataMessage::new_block(h));
          self.push(pmsg);
       }
+       */
    }
 
    fn ioloop(&mut self) -> Result< (), Error > {
