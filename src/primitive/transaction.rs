@@ -6,7 +6,7 @@ use ::script::{Script};
 pub type Amount = i64;
 
 const COIN:Amount = 100000000;
-const CENT:Amount = 1000000;
+//const CENT:Amount = 1000000;
 const MAX_MONEY:Amount = 21000000 * COIN;
 
 #[derive(Debug,Default,Clone,Eq,PartialEq,PartialOrd,Ord)]
@@ -19,29 +19,46 @@ impl OutPoint {
    pub fn is_null(&self) -> bool { self.hash.is_null() && self.n == std::u32::MAX }
 }
 
-
 #[derive(Debug,Default,Clone)]
 pub struct TxIn {
-   prevout:    OutPoint,
-   script_sig: Script,
-   sequence:   u32,
+   pub prevout:    OutPoint,
+   pub script_sig: Script,
+   pub sequence:   u32,
 }
 
 #[derive(Debug,Default,Clone)]
 pub struct TxOut {
-   value:         Amount,
-   script_pubkey: Script,
+   pub value:         Amount,
+   pub script_pubkey: Script,
 }
 
 #[derive(Debug,Default,Clone)]
 pub struct Transaction {
-   version:  i32,
-   ins:      Vec<TxIn>,
-   outs:     Vec<TxOut>,
-   locktime: u32,
+   pub version:  i32,
+   pub ins:      Vec<TxIn>,
+   pub outs:     Vec<TxOut>,
+   pub locktime: u32,
+}
+
+impl TxOut {
+   pub fn new() -> TxOut {
+      TxOut { //eq to set_null
+         value: -1,
+         script_pubkey: Script{ bytecode: vec!() },
+      }
+   }
+   pub fn set_null(&mut self) {
+      self.value = -1;
+      self.script_pubkey.bytecode.clear();
+   }
 }
 
 impl Transaction {
+   pub fn calc_hash(&self) -> UInt256 {
+      let o:&Serializable = self as &Serializable;
+      o.serialize_hash256d(&serialize::SerializeParam::new_gethash()).unwrap()
+   }
+
    pub fn is_coin_base(&self) -> bool {
       self.ins.len() == 1 && self.ins[0].prevout.is_null()
    }
@@ -49,10 +66,10 @@ impl Transaction {
    pub fn check(&self) -> Result<(), Error> {
       if self.ins.is_empty()  { try!(Err(GenericError::new("empty tx inputs"))); }
       if self.outs.is_empty() { try!(Err(GenericError::new("empty tx outputs"))); }
-
+      
       {
          let s = self.get_serialize_size(&SerializeParam::new_net());
-         if s < super::MAX_BLOCK_SIZE { try!(Err(GenericError::new("oversize tx"))); }
+         if s > super::MAX_BLOCK_SIZE { try!(Err(GenericError::new("oversize tx"))); }
       }
 
       {
@@ -64,7 +81,7 @@ impl Transaction {
             if MAX_MONEY < amount { try!(Err(GenericError::new("toolarge total tx out"))); }
          }
       }
-
+         
       {
          let mut set = std::collections::BTreeSet::<&OutPoint>::new();
          for pin in self.ins.iter() {
@@ -103,7 +120,7 @@ impl std::fmt::Display for TxOut {
 }
 impl std::fmt::Display for Transaction {
    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-      write!(f, "Tx(ver={}, ins={:?}, outs={:?}, locktime={})", self.version, self.ins, self.outs, self.locktime)
+      write!(f, "Tx(ver={}, ins={}, outs={}, locktime={})", self.version, self.ins.len(), self.outs.len(), self.locktime)
    }
 }
 

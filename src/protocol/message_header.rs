@@ -1,8 +1,7 @@
 use std;
 extern crate time;
-extern crate crypto;
-use self::crypto::digest::Digest;
 use ::serialize::{Serializable};
+use primitive::hasher::hash256d;
 
 pub const MESSAGE_START_SIZE:usize  =  4;
 pub const COMMAND_SIZE:usize        = 12;
@@ -73,16 +72,10 @@ impl MessageHeader {
       self.size = data.len() as u32;
 
       {
-         let mut hasher = crypto::sha2::Sha256::new();
-         let mut tmp = [0u8; 32];
-         hasher.input(&data);
-         hasher.result(&mut tmp);
-         hasher.reset();
-         hasher.input(&tmp);
-         hasher.result(&mut tmp);
+         let hash = hash256d(&data);
          let mut sum:u32 = 0;
          let psum: &mut [u8;4] = unsafe { std::mem::transmute(&mut sum) };
-         psum.clone_from_slice(&tmp[0..4]);
+         psum.clone_from_slice(&hash.data[0..4]);
          self.checksum = u32::from_le(sum);
       }
 

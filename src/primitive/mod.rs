@@ -16,9 +16,12 @@ pub use self::transaction::TxOut;
 pub use self::transaction::OutPoint;
 pub use self::transaction::Amount;
 pub use self::transaction::Transaction;
+pub use self::pubkey::PubKey;
 
 pub mod error;
 pub mod uint256;
+pub mod hasher;
+pub mod pubkey;
 pub mod consensus_params;
 pub mod chain_params;
 pub mod pow;

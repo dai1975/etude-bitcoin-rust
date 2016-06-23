@@ -23,7 +23,7 @@ pub struct ConsensusParams {
 }
 
 impl ConsensusParams {
-   pub fn getDifficultyAdjustmentInterval(&self) -> i64 {
-      self.pow_target_timespan / self.pow_target_spacing
-   }
+//   pub fn getDifficultyAdjustmentInterval(&self) -> i64 {
+//      self.pow_target_timespan / self.pow_target_spacing
+//   }
 }
