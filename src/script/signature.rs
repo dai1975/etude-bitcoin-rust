@@ -154,7 +154,7 @@ fn hash_target(target: &[u8], tx:&Transaction, in_idx:usize, hash_type:u8) -> UI
       let param  = SerializeParam::new_gethash_ver(0);
       Ok(0)
          .and_then(|_| tx_ser.serialize(io, &param))
-         .and_then(|_| hash_type.serialize(io, &param))
+         .and_then(|_| (hash_type as u32).serialize(io, &param))
          .map(|_| io.get_hash())
          .unwrap_or(one)
    }
